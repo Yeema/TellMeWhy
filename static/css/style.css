@@ -1,0 +1,104 @@
+#leftDiv {
+    /* height: 70%; */
+    /* width: 20%; */
+    /* display: inline-block; */
+    margin: 5% 5% 2% 5%;
+}
+
+#write-aes { 
+/*     border: none; */
+    overflow: auto;
+    font-size: 1rem;
+/*     outline: none; */
+    resize: none;
+    -webkit-box-shadow: none;
+    -moz-box-shadow: none;
+    box-shadow: none;
+    height: 90%;
+    width: 100%;
+    /* resize: none; remove the resize handle on the bottom right */
+    -moz-appearance: textfield-multiline;
+    -webkit-appearance: textarea;
+    border: 1px solid gray;
+    padding: 0.5rem;
+ }
+.icons{
+font-size = 20em;
+text-align-last: right;
+}
+.fas{
+margin: 3% 0% 2% 4%;
+}
+u {
+  text-decoration: underline;
+  text-decoration-color: rgb(0,0,255);
+}
+
+.textcrollbar{
+    max-height: 70%;
+    overflow-y: auto;
+    resize: none;
+}
+.textcrollbar-color::-webkit-scrollbar {
+    width: 0.5em;
+    background-color: #F5F5F5; }
+
+.textcrollbar-color::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+    background-image: -webkit-gradient(linear, left bottom, left top, from(#30cfd0), to(#330867));
+    background-image: -webkit-linear-gradient(bottom, #30cfd0 0%, #330867 100%);
+    background-image: linear-gradient(to top, #30cfd0 0%, #330867 100%); }
+
+#rightDiv {
+    margin: 5% 5% 2% 0%;
+}
+
+.col-button{
+    left:40%; 
+}
+
+#header_write_a_gec_sent{
+    font-family: sans-serif;
+    color: darkblue;
+}
+.text-monospace{
+    font-style: italic;
+    font-size: small;
+    color:#737373;
+}
+.col-sen-toop{
+    font-size: 10em;
+}
+
+#rightTitle{
+    background: -webkit-linear-gradient(bottom, #30cfd0 0%, #330867 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.nav-link{
+    font-size: 1.5rem;
+    color: darkblue;
+}
+.accordion{
+    width: 100%;
+}
+.card-header{
+    background-color: white;
+}
+.scrollbar {
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+.scrollbar-morpheus-den::-webkit-scrollbar {
+    width: 0.5em;
+    background-color: #F5F5F5; }
+    
+.scrollbar-morpheus-den::-webkit-scrollbar-thumb {
+border-radius: 10px;
+-webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+background-image: -webkit-gradient(linear, left bottom, left top, from(#30cfd0), to(#330867));
+background-image: -webkit-linear-gradient(bottom, #30cfd0 0%, #330867 100%);
+background-image: linear-gradient(to top, #30cfd0 0%, #330867 100%); }
+    
