@@ -22,18 +22,51 @@
     border: 1px solid gray;
     padding: 0.5rem;
  }
+
+.addition:not(.active){
+    display: none;
+}
+
+.addition.active {
+    font-weight: bold;
+}
+
+.deletion.active{
+    color: red;
+    text-decoration: line-through;
+}
+.explain.active{
+    color: red;
+}
+.function_buttons{
+    margin: 3% 0%2% 10%;
+}
 .icons{
-font-size = 20em;
-text-align-last: right;
+    font-size = 20em;
+    text-align-last: right;
+    align-items: center;
+    justify-content: flex-end;
+    display: flex;
+}
+.button{
+    background-color: blue;
+    color: black;
+    border: 2px solid blue;
+    border-radius: 4px;
+/*     box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19); */
+    text-align: center;
+    font-size: 1rem;
 }
 .fas{
-margin: 3% 0% 2% 4%;
+    margin: 3% 0% 3% 4%;
 }
 u {
   text-decoration: underline;
   text-decoration-color: rgb(0,0,255);
 }
-
+.default-intro{
+    margin: 20% 15% 20% 15%;
+}
 .textcrollbar{
     max-height: 70%;
     overflow-y: auto;

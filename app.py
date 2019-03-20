@@ -13,7 +13,10 @@ from nltk.stem import WordNetLemmatizer
 import re
 import spacy
 from nltk.tokenize import sent_tokenize,word_tokenize
+import requests
+import json
 
+GEC_API = 'https://whisky.nlplab.cc/translate/?text={}'
 ab = re.compile(r"\w*'\w*|\w*’\w*")
 loss_del = re.compile(r'\[ *- *([^\[\]]*?) *- *\]')
 loss_add = re.compile(r'\{\ *\+ *([^\[\]]*?) *\+ *\}')
@@ -35,6 +38,7 @@ dictDef = defaultdict(lambda: defaultdict(list))
 miniparCol = defaultdict(lambda: defaultdict(lambda: Counter()))
 pw = defaultdict(lambda: defaultdict(lambda:Counter()))
 pw_ratio = defaultdict(lambda: defaultdict(lambda:Counter()))
+
 @app.route('/')	
 def index():
     return render_template('template.html')
@@ -45,24 +49,43 @@ def query_entry():
     print("GET HTTP POST REQUEST:", text)
     text = beautify(text)
     result = defaultdict(lambda: defaultdict())
-    result = explain(text,result)
-    results = htmlize(result)
-    print('results',results)
-    return results
+    explain(text,result,'explain')
+    res = {}
+    htmlize(result,res,'Example')
+    return jsonify(res)
 
-def htmlize(result):
+@app.route('/color',methods = ['POST'])
+def query_color():
+    string = request.form['sent']
+    pos = request.form['pos']
+    pos = [int(p) for p in pos.split('\t')]
+    if pos[1]<len(string):
+        return string[:pos[0]]+'<span style="color:red">%s</span>'%string[pos[0]:pos[1]]+string[pos[1]:]
+
+@app.route('/GEC',methods=['POST'])
+def query_GEC():
+    string = request.form['sent']
+    edits = requests.get(GEC_API.format(string))
+    edits = eval(edits.text)
+    correction = edits['word_diff']
+    correction = beautify(correction)
+    result = defaultdict(lambda: defaultdict())
+    explain(correction,result,'GEC')
+    res = {}
+    htmlize(result,res,'GEC')
+    return jsonify(res)
+
+def htmlize(result,res,mode):
     myPanel = ''
 #     {'a':'<ul><li>'+'</li><li>'.join(['aaa','aaaa'])+'</li></ul>','b':'<ul><li>'+'</li><li>'.join(['bbb','bbbb']),'c':'<ul><li>'+'</li><li>'.join(['aaa','aaaa'])+'</li></ul>','d':'<ul><li>'+'</li><li>'.join(['bbb','bbbb']),'e':'<ul><li>'+'</li><li>'.join(['aaa','aaaa'])+'</li></ul>','f':'<ul><li>'+'</li><li>'.join(['bbb','bbbb'])}
     for id,mod in result.items():
-        print(id,mod)
+        # res['%d\tpos'%(id)] = '%d\t%d'%(mod['pos'][0],mod['pos'][1])
         tmp = '<ul><li> %s </li></ul>'%('</li><li>'.join([r for r in mod['body'] if r.replace('<p></p>','').strip()]))
-#         myPanel += '<div class="card" '+' id = dynamic_card'+counter+'>'+'<div class="card-body">'+
-#          '<h5 class="card-title">'+property+'</h5>'+
-#          '<p class="card-text">'+ entail(data[property]) + '</p>'+
-#          '</div></div>';
-        myPanel += '<div class="card shadow-sm rounded bg-white">'+'<div class="card-header" id="heading%d">'%(id)+'<h2 class="mb-0">'+'<button class="btn collapsed" type="button" data-toggle="collapse" data-target="#collapse%d" aria-expanded="false" aria-controls="collapse%d" id = "btn%d">'%(id,id,id)+'%s'%(mod['header'])+ '</button>'+'</h2>'+'</div>'+'<div id="collapse%d" class="collapse" aria-labelledby="heading%d" data-parent="#accordionExample">'%(id,id)+'<div class="card-body">'+'%s'%(tmp)+'</div>'+'</div>'+'</div>'
+        myPanel += '<div class="card shadow-sm rounded bg-white">'+'<div class="card-header" id="heading%d">'%(id)+'<h2 class="mb-0">'+'<button class="btn collapsed" type="button" data-toggle="collapse" data-target="#collapse%d" aria-expanded="false" aria-controls="collapse%d" data-edit="edit%d">'%(id,id,id)+'%s'%(mod['header'])+ '</button>'+'</h2>'+'</div>'+'<div id="collapse%d" class="collapse" aria-labelledby="heading%d" data-parent="#accordion%s" data-edit="edit%d">'%(id,id,mode,id)+'<div class="card-body">'+'%s'%(tmp)+'</div>'+'</div>'+'</div>'
 
-    return myPanel.replace('<li></li>','')
+    res['sent'] = result[0]['sent']
+    res['html'] = myPanel.replace('<li></li>','')
+
 
 dictDet = {'some' :"<b>Some</b> is usually used to show that there is a quantity of something or a number of things or people, without being precise. It is used with uncountable nouns and plural countable nouns.",
 'a2some' : "When you want to emphasize that you do not know the identity of a person or thing, or you think their identity is not important, you can use <b>some</b> with a sigular countable noun, instead of a or an.",
@@ -990,8 +1013,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                                 elif len(pattern.split()) and a_lemma != head:
                                     output.append('The tense error is caused by <b>%s</b>.'%(head))
                                     break
-                    else:
-                        output.append('Tense error!')
+                    output.append('Tense error!')
                 else:
                     output.append(explain_voc_semantic_error(correction,d_lemma,d_part,a_lemma,a_part))
             # countable uncountable?
@@ -1441,14 +1463,68 @@ def leave_error(correction,lists):
             input_cor = correction[:idx+1]+ ' '.join(rephrase(correction[idx:]))
             input_split = input_cor.split()
         return input_cor,input_split,start
-    
-def explain(corrections,result):
+def grep_error(string,lists,error,base,mod_list):
+    start = 0
+    # for l in lists:
+    #     idx = string.find(l,start)
+    #     error.append((l,base+idx,base+idx+len(l)))
+    #     start = idx+1
+    # return
+    for matchobj in lists:
+        idx = string.find(matchobj, start)
+        after = '<span class="edit explain edit{error_id}">{edits}</span>'.format(error_id = len(error),edits = matchobj)
+        error.append((matchobj,base+idx,base+idx+len(matchobj)))
+        string = myreplace(string,idx,matchobj, after)
+        start = idx+1
+    mod_list.append(string)
+
+def myreplace(string,idx,before,after):
+    if idx > -1:
+        if len(string) > idx+len(before):
+            string = string[:idx] + after + string[idx+len(before):]
+        else:
+            string = string[:idx] + after
+        return string
+    else:
+        return
+
+def grep_error_GEC(string,b_lists,lists,errors,mod_list):
+    error_id = len(errors)
+    start = 0
+    for before, matchobj in zip(b_lists, lists):
+        idx = string.find(before, start)
+        if matchobj[0]:
+            after = '<span class="edit deletion edit{error_id}">{delete}</span> <span class="edit addition edit{error_id}">{insert}</span>'.format(
+                error_id=error_id, delete=matchobj[0], insert=matchobj[1])
+        elif matchobj[2]:
+            after = '<span class="edit deletion edit{error_id}">{delete}</span>'.format(error_id=error_id, delete=matchobj[2])
+        else:
+            after = '<span class="edit addition edit{error_id}">{insert}</span>'.format(error_id=error_id, insert=matchobj[3])
+        string = myreplace(string,idx,before, after)
+        error_id += 1
+        start = idx+1
+    mod_list.append(string)
+    # print('in grep_error_GEC',mod_list)
+
+
+def explain(corrections,result,mode):
     mod_list = []
     prevs = []
     error_count = 0
+    error_list = []
+    accumulate_len = 0
+    final_list = []
     for correction in sent_tokenize(corrections):
         correction = beautify(correction)
+        final_list.append(correction)
         entails_sent = rephrase(correction)
+        if mode == 'GEC':
+            grep_error_GEC(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction),re.findall(r'\[- *([^\[\]]*?) *-\] *\{\+ *([^\[\]]*?) *\+\}|\[- *([^\[\]]*?) *-\]|\{\+ *([^\[\]]*?) *\+\}',correction),error_list,mod_list) 
+            grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction),error_list,accumulate_len,[])
+        else:
+            grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction),error_list,accumulate_len,mod_list)
+            print(mod_list)
+        accumulate_len += len(correction)+1
         while deletion.search(correction) or addition.search(correction):
             if prevs:
                 if prevs[0] in allreserved or prevs[1] in allreserved:
@@ -1457,7 +1533,8 @@ def explain(corrections,result):
                         b = addition.search(correction).group(0)
                         c = addition.search(correction).group(1)
                         if 'ing' in a or 'ing' in b:
-                            correction = ' '.join(correction.replace(a,'').replace(b,c).split())     
+                            correction = ' '.join(correction.replace(a,'').replace(b,c).split()) 
+                            error_count += 1    
                             continue
             done = False
             
@@ -1467,7 +1544,6 @@ def explain(corrections,result):
             replacelist = [[],[],[]]
             if delandadd.search(correction):
                 tmp = multi_delandadd.search(correction).group(0).strip()
-                result[error_count]['id'] = (correction.find(tmp),correction.find(tmp) + len(tmp))
                 # before = ''.join(tmp.split())
                 before = ' '.join(re.findall(addition, tmp))
 #                 transform = ' '.join(re.findall(deletion, tmp)) + '\t->\t' + before
@@ -1478,7 +1554,6 @@ def explain(corrections,result):
                 prevs = ( ' '.join(re.findall(deletion, tmp)),before)
             if deletion.search(correction):
                 tmp = deletion.search(correction).group(0)
-                result[error_count]['id'] = (correction.find(tmp),correction.find(tmp) + len(tmp))
                 after = ''
                 case2 = correction.find(tmp)
 #                 transform = deletion.search(correction).group(1) + '\t->\t' + 'NONE'
@@ -1487,7 +1562,6 @@ def explain(corrections,result):
                 prevs = ( deletion.search(correction).group(1)  ,'')
             if addition.search(correction):
                 tmp = addition.search(correction).group(0)
-                result[error_count]['id'] = (correction.find(tmp),correction.find(tmp) + len(tmp))
                 after = addition.search(correction).group(1)
                 case3 = correction.find(tmp)
 #                 transform = 'NONE' + '\t->\t' + addition.search(correction).group(1)
@@ -1506,13 +1580,14 @@ def explain(corrections,result):
                 tmp = explain_unnecessary(input_cor,entails_sent,input_split,threshold,done)
             # addition
             elif idx == 2 :
-                tmp = explain_missing(input_cor,entails_sent,input_split,threshold,done)
-            result[error_count]['correction'] = correction 
+                tmp = explain_missing(input_cor,entails_sent,input_split,threshold,done) 
             result[error_count]['header'] = replacelist[idx][2]
-            result[error_count]['body'] = tmp  
+            result[error_count]['body'] = tmp
+            # result[error_count]['pos'] = (error_list[error_count][1],error_list[error_count][2])
             error_count += 1
             correction = ' '.join(correction.replace(replacelist[idx][0],replacelist[idx][1]).split())
-    return result
+    # result[0]['beautify'] = ' '.join(final_list)
+    result[0]['sent'] = ' '.join(mod_list)
 
 def beautify(s):
     for a in re.findall(ab,s):

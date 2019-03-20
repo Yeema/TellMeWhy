@@ -37,13 +37,14 @@
                     </h3>
                 </div>
                 <div class = "textcrollbar textcrollbar-color clickable" contentEditable="true" id="write-aes">
-                    I discuss [-with-] the issue.
+                    I discuss with the issue.
                 </div>
                 <!-- <textarea class="textcrollbar textcrollbar-color clickable" 
                 placeholder="Write something here...&#10;&#10;[Replace]&nbsp;I am [-a-] {+an+} honest teacher.&#10;[Missing]&nbsp;School finishes at five in {+the+} morning .&#10;[Unnecessary]&nbsp;She is arriving on March [-the-] 25th." 
                 id="write-aes">I discuss [-with-] the issue.</textarea> -->
+                
                 <div class = "icons">
-                    <i class="fas fa-search fa-2x" id="send-aes"></i>
+                    <button type="button" class="btn btn-outline-primary" id="send-aes">Submit</button>
                     <i class="fas fa-file-upload fa-2x"></i>
                     <i class="fas fa-file-download fa-2x"></i>
                     <i class="fas fa-trash-alt fa-2x"></i>
@@ -53,48 +54,33 @@
                 <div class = "align-items-center">
                     <ul class="nav nav-tabs">
                         <li class="nav-item">
-                            <a class="nav-link active" id="explain-tab" data-toggle="tab" href="#explain" role="tab" aria-controls="explain" aria-selected="true">Explainations</a>
+                            <a class="nav-link active" id="gec-tab" data-toggle="tab" href="#gec" role="tab" aria-controls="gec" aria-selected="true">Error Correction</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="explain-tab" data-toggle="tab" href="#explain" role="tab" aria-controls="explain" aria-selected="true">Explainations</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" id="linggle-tab" data-toggle="tab" href="#linggle" role="tab" aria-controls="linggle" aria-selected="false">Go Linggle</a>
                         </li>
                     </ul>
                     <div class="tab-content" id="myTabContent">
-                        <div class="tab-pane fade show active" id="explain" role="tabpanel" aria-labelledby="explain-tab">
+                        <div class="tab-pane fade show active" id="gec" role="tabpanel" aria-labelledby="gec-tab">
+                            <div class="h-100 accordion scrollbar scrollbar-morpheus-den" id="accordionGEC">
+                                <p class="default-intro">Usage: Submit an essay.</p>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="explain" role="tabpanel" aria-labelledby="explain-tab">
                             <div class="h-100 accordion scrollbar scrollbar-morpheus-den" id="accordionExample">
-                                <div class="card">
-                                        <div class="card-header" id="headingOne">
-                                            <h2 class="mb-0">
-                                            <button class="btn" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                                                Collapsible Group Item #1
-                                            </button>
-                                            </h2>
-                                        </div>
-                                    
-                                        <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordionExample">
-                                            <div class="card-body">
-                                            Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident. Ad vegan excepteur butcher vice lomo. Leggings occaecat craft beer farm-to-table, raw denim aesthetic synth nesciunt you probably haven't heard of them accusamus labore sustainable VHS.
-                                            </div>
-                                        </div>
-                                </div>
-                                <div class="card">
-                                    <div class="card-header" id="headingTwo">
-                                        <h2 class="mb-0">
-                                        <button class="btn collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                                            Collapsible Group Item #2
-                                        </button>
-                                        </h2>
-                                    </div>
-                                    <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionExample">
-                                        <div class="card-body">
-                                        Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. 3 wolf moon officia aute, non cupidatat skateboard dolor brunch. Food truck quinoa nesciunt laborum eiusmod. Brunch 3 wolf moon tempor, sunt aliqua put a bird on it squid single-origin coffee nulla assumenda shoreditch et. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident. Ad vegan excepteur butcher vice lomo. Leggings occaecat craft beer farm-to-table, raw denim aesthetic synth nesciunt you probably haven't heard of them accusamus labore sustainable VHS.
-                                        </div>
-                                    </div>
-                                </div>
+                                <p class="default-intro">
+                                    <p>Usage: There are three types of edits. Enter them in the following formats.</p>
+                                    <b>Replacement:</b> He [-borrowed-]{+lent+} me some of his books.<br>
+                                    <b>Omission:</b> We discussed [-about-] the issue.<br>
+                                    <b>Insertion:</b> School finishes at five in {+the+} afternoon.
+                                </p>
                             </div>
                         </div>
                         <div class="tab-pane fade" id="linggle" role="tabpanel" aria-labelledby="linggle-tab">
-                            ...
+                            <p class="default-intro">Usage: Click on any vocabulary in TELLMEWHY box for its usages and examples.</p>
                         </div>
                     </div>
                 </div>
