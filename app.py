@@ -67,12 +67,14 @@ def query_GEC():
     string = request.form['sent']
     edits = requests.get(GEC_API.format(string))
     edits = eval(edits.text)
-    correction = edits['word_diff']
-    correction = beautify(correction)
-    result = defaultdict(lambda: defaultdict())
-    explain(correction,result,'GEC')
+    # correction = edits['word_diff']
+    correction = edits['word_diff_by_sent']
     res = {}
-    htmlize(result,res,'GEC')
+    if correction:
+        correction = beautify(correction[0])
+        result = defaultdict(lambda: defaultdict())
+        explain(correction,result,'GEC')
+        htmlize(result,res,'GEC')
     return jsonify(res)
 
 def htmlize(result,res,mode):
@@ -914,7 +916,7 @@ def explain_time_error(head):
     elif head == 'weekends':
         res.append("When you refer to <b>weekends</b>, use at the weekends.")
         res.append(str_example%("For example:\tI never do any work at weekends."))
-    return '<br>'+'</br><br>'.join(res)+'</br>'
+    return ''.join(res)
 
 def explain_replace(correction,entails_sent,correction_split,threshold,done = False):
     output = []
@@ -1136,9 +1138,10 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
         target.append(correction_split[idx-1])
     if idx+1 < len(correction_split):
         target.append(correction_split[idx+1])
-    if focus in det_p.union(det_s) or focus.lower() == 'of':
+    if focus in det_p.union(det_s) or focus in allreserved:
         if any(t in MONTH for t in target) and focus.lower() in ['the','of']: 
             output.append("When you say the date, use %s %s  or <b>WITHOUT the or of</b>."%(target[0],target[1],target[1],target[0]))
+            done = True
         elif focus == 'the':
             nextwordN,nextwordN_lemma = find_nextword(entails_sent,target[-1],'N')
             done = True
@@ -1166,7 +1169,7 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
                 output.append(rule + str_example%('</p><p>'.join(tmp)))
             else:
                 output.append(dictDet[focus])
-        elif any(t.lower() in TIME for t in target) and focus.lower() in det_s or focus in allreserved or focus.lower():
+        elif any(t.lower() in TIME for t in target) and (focus.lower() in det_s or focus.lower() in allreserved):
             for t in target:
                 if t.lower() in TIME or t.isdigit():
                     time_error = explain_time_error(t.lower())
@@ -1175,6 +1178,7 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
                         done = True
                         break
         elif focus in det_s:
+            print(1182)
             nextwordN,nextwordN_lemma = find_nextword(entails_sent,target[-1],'N')
             nextwordJ,nextwordJ_lemma = find_nextword(entails_sent,target[-1],'J')
     #             uncountable
@@ -1183,6 +1187,7 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
                 done = True
             elif check_P(nextwordN,nextwordN_lemma):
                 output.append('<b>%s</b> is usually used with singular countable nouns.'%(focus))
+                done = True
 #             elif entails_sent.index(nextwordN) - entails_sent.index(nextwordJ) < 2:
 #     #             adjective to be noun
 #                 output.append("Do not use %s before an adjective (e.g. ‘deaf’, ‘British’) unless the adjective is followed by a noun"%(focus))
@@ -1273,25 +1278,7 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
     nextwordV,nextwordV_lemma = find_nextword(entails_sent,focus,'V')
     nextdigit,nextdigit_lemma = find_nextword(entails_sent,focus,'C')
     if focus.lower() in det_s.union(det_s):
-        if focus in det_p:
-            output.append("Use a determiner before a plural countable noun such as %s"%(nextwordN))
-            output.append(dictDet[focus.lower()])
-            output.append(find_N_meaning(nextwordN))
-            done = True
-        elif focus in det_s:
-            if focus != 'that':
-                output.append("Use a determiner before a singular countable noun such as %s"%(nextwordN))
-                output.append(find_N_meaning(nextwordN))
-                done = True
-            else:
-                if  nextwordV!= nextwordN and entails_sent.index(nextwordV) - entails_sent.index(nextwordN)>2:
-                    output.append("Use a determiner before a singular countable noun such as %s"%(nextwordN))
-                    output.append(find_N_meaning(nextwordN))
-                    done = True
-                else:
-                    output.append("Do not omit <b>that</b> before a clause.")
-                    done = True
-        elif nextwordN.lower() in TIME or nextdigit.isdigit():
+        if nextwordN.lower() in TIME or nextdigit.isdigit():
             if focus.lower() =='the' or focus.lower() in det_s or focus.lower() in allreserved:
                 time_error = explain_time_error(nextwordN.lower())
                 if time_error:
@@ -1330,6 +1317,26 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
                 tmp.append("the beautiful")
                 output.append(rule+str_example%('</p><p>'.join(tmp)))
                 done = True
+        elif focus in det_p:
+            output.append("Use a determiner before a plural countable noun such as %s"%(nextwordN))
+            output.append(dictDet[focus.lower()])
+            output.append(find_N_meaning(nextwordN))
+            done = True
+        elif focus in det_s:
+            print('1324')
+            if focus != 'that':
+                output.append("Use a determiner before a singular countable noun such as %s"%(nextwordN))
+                output.append(find_N_meaning(nextwordN))
+                done = True
+            else:
+                if  nextwordV!= nextwordN and entails_sent.index(nextwordV) - entails_sent.index(nextwordN)>2:
+                    output.append("Use a determiner before a singular countable noun such as %s"%(nextwordN))
+                    output.append(find_N_meaning(nextwordN))
+                    done = True
+                else:
+                    output.append("Do not omit <b>that</b> before a clause.")
+                    done = True
+        
     if not done:
         idx = [id for id,seg in enumerate(correction_split) if addition.search(correction).group(0) in seg][0]
         target = []

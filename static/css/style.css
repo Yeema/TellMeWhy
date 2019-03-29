@@ -29,6 +29,7 @@
 
 .addition.active {
     font-weight: bold;
+    color: red;
 }
 
 .deletion.active{
