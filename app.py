@@ -38,7 +38,7 @@ dictDef = defaultdict(lambda: defaultdict(list))
 miniparCol = defaultdict(lambda: defaultdict(lambda: Counter()))
 pw = defaultdict(lambda: defaultdict(lambda:Counter()))
 pw_ratio = defaultdict(lambda: defaultdict(lambda:Counter()))
-
+LCE = eval(open('/home/nlplab/yeema/ErrorExplaination/LCE.json').read())
 @app.route('/')	
 def index():
     return render_template('template.html')
@@ -46,12 +46,16 @@ def index():
 @app.route('/query', methods=['POST'])
 def query_entry():
     text = request.form['text_field']
-    print("GET HTTP POST REQUEST:", text)
     text = beautify(text)
-    result = defaultdict(lambda: defaultdict())
-    explain(text,result,'explain')
     res = {}
-    htmlize(result,res,'Example')
+    if re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',text):
+        result = defaultdict(lambda: defaultdict())
+        explain(text,result,'explain')
+        htmlize(result,res,'Example')
+    else:
+        if text.strip() in LCE:
+            lookup_LCE(text.strip(),res)
+        
     return jsonify(res)
 
 @app.route('/color',methods = ['POST'])
@@ -423,6 +427,17 @@ def find_patterns(parse,target):
 #                 if any([pat[0].split("%")[0] for pat in dictWord[mode][head]]):
                     tmp.append([pat,head,mode,pat_example])
     return tmp
+def lookup_LCE(word,res):
+    explanations = LCE[word]
+    rows = ""
+    for explanation in explanations:
+        for ex in explanation:
+            if ex[0] == 'Explain':
+                rows+='<tr class = "table-info"><th scope="row">{category}</th><td>{example}</td></tr>'.format(category = ex[0],example = ex[1])
+            else:
+                rows+='<tr><th scope="row">{category}</th><td>{example}</td></tr>'.format(category = ex[0],example = ex[1])
+    res['sent'] = word
+    res['html'] = '<table class="table"><tbody>{row_info}</tbody></table>'.format(row_info = rows)
 
 def find_phrases(patterns,head,part):
     output_phrases = []
@@ -484,7 +499,7 @@ def explain_voc_semantic_error(correction,d_lemma,d_part,a_lemma,a_part):
         if addmeaning:
             tmp.append("<b>%s</b> :\t%s."%(a_lemma,addmeaning))
         if tmp:
-            output.append("<br>%s</br>"%('</br><br>'.join(tmp)))
+            output.append("<p>%s</p>"%('</p><p>'.join(tmp)))
         
     return '<p>'+'</p><p>'.join(output)+'</p>'
 
@@ -851,15 +866,15 @@ def find_collocations(gps,tagging,a_lemma,d_lemma):
                         col = headword + ' ' +pattern.split()[1] + ' ' + a_lemma
                         wcol = headword + ' ' +pattern.split()[1] + ' ' + d_lemma
                         output.append('People always use <b>%s</b>. It is impossible to use <b>%s</b>'%(col,wcol))
-    return '<br>'+'</br><br>'.join(output)+'</br>'
+    return '<p>'+'</p><p>'.join(output)+'</p>'
 def explain_INF():
     inf = "When verbs followed by a to-infinitive often indicate the intention of an action or a future event."
-    ing = "Compare: Verbs followed by an <b>-ing<b> form often emphasize on a status, fact, or activity."
-    return "<br>"+inf+"</br><br>"+ing+"</br>"
-def explain_INF():
-    ing = "when verbs followed by an <b>-ing<b> form often emphasize on a status, fact, or activity."
+    ing = "Compare: Verbs followed by an <b>-ing</b> form often emphasize on a status, fact, or activity."
+    return "<p>"+inf+"</p><p>"+ing+"</p>"
+def explain_ING():
+    ing = "When verbs followed by an <b>-ing</b> form often emphasize on a status, fact, or activity."
     inf = "Compare: Verbs followed by a to-infinitive often indicate the intention of an action or a future event."
-    return "<br>"+ing+"</br><br>"+inf+"</br>"
+    return "<p>"+ing+"</p><p>"+inf+"</p>"
 def check_P(word,lemma):
     word = word.strip()
     if word!= lemma:
@@ -993,7 +1008,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                     tmp = []
                     tmp.append('"<b>%s</b>" is a phrase.'%(idioms[0]))
                     tmp.append("This means that %s."%('\t'.join(list(dictPhrase[idioms[0]].values())[0][0]).strip()))
-                    output.append("<br>%s</br>"%('</br><br>'.join(tmp)))
+                    output.append("<p>%s</p>"%('</p><p>'.join(tmp)))
     else:
         delset,addset = compare_lemma(correction)
         d_word,d_lemma,d_part = delset
@@ -1034,7 +1049,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                 output.append(explain_voc_semantic_error(correction,d_lemma,d_part,a_lemma,a_part))
         elif d_part != a_part:
             output.append("Misuse part of speech!")
-            output.append("<br>%s: %s</br><br>vs</br><br>%s: %s</br>"%(d_word,d_part,a_word,a_part))
+            output.append("<p>%s: %s</p><p>vs</p><p>%s: %s</p>"%(d_word,d_part,a_word,a_part))
         elif d_lemma in det_s.union(det_p) and a_lemma in det_s.union(det_p):
 #             an -> a
             if d_lemma == 'an' and a_lemma == 'a':
@@ -1045,7 +1060,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                     tmp.append("Use an if the h is silent: <b>an hour</b>, <b>an honour</b>.") 
                     tmp.append("If the h is pronounced but the syllable is unstressed, it is possible to use a or an (<b>a/an hotel</b>).")  
                     tmp.append("However, the use of an here is considered old fashioned and most people use a.")
-                    output.append('<br>%s</br>'%('</br><br>'.join(tmp)))
+                    output.append('<p>%s</p>'%('</p><p>'.join(tmp)))
                 else:
                     if nextword[0].lower() in ['u','o']:
                         output.append("In this case, %s is pronounced as y which is a consonant sound, use a (NOT an)."%(nextword[0].lower()))
@@ -1079,7 +1094,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                     tmp.append('For example:')
                     tmp.append('Every house in the street had one or two broken windows.')
                     tmp.append('All students are required to register during the first week.')
-                    output.append('<br>%s</br>'%('</br><br>'.join(tmp)))
+                    output.append('<p>%s</p>'%('</p><p>'.join(tmp)))
                 elif a_lemma in det_s:
                     output.append("Any is usually used with uncountable nouns and plural countables (NOT with singular countable nouns).")
                     tmp = []
@@ -1178,7 +1193,6 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
                         done = True
                         break
         elif focus in det_s:
-            print(1182)
             nextwordN,nextwordN_lemma = find_nextword(entails_sent,target[-1],'N')
             nextwordJ,nextwordJ_lemma = find_nextword(entails_sent,target[-1],'J')
     #             uncountable
@@ -1199,7 +1213,7 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
                 output.append("Do not use a determiner (e.g. some, the, their) before certain when it means ‘particular.")
                 output.append(dictDet[focus])
                 done = True
-        elif focus != 'that':
+        elif focus != 'that' and not focus in allreserved:
             output.append(dictDet[focus])
             done = True
     if not done:
@@ -1306,13 +1320,13 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
     #             J after the
                 rule = "To refer to a group of people or stuff, use 'the + adjective'"
                 tmp = []
-                rule += "<br>[people]</br>"
+                rule += "<p>[people]</p>"
                 tmp.append("the elderly") 
                 tmp.append("the British")
                 rule += str_example%('</p><p>'.join(tmp))
 
                 tmp = []
-                rule += "<br>[stuff]</br>"
+                rule += "<p>[stuff]</p>"
                 tmp.append("the mysterious")
                 tmp.append("the beautiful")
                 output.append(rule+str_example%('</p><p>'.join(tmp)))
@@ -1530,7 +1544,6 @@ def explain(corrections,result,mode):
             grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction),error_list,accumulate_len,[])
         else:
             grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction),error_list,accumulate_len,mod_list)
-            print(mod_list)
         accumulate_len += len(correction)+1
         while deletion.search(correction) or addition.search(correction):
             if prevs:
@@ -1623,22 +1636,23 @@ def init_DB():
     tmp_dictPhrase = eval(open('/home/nlplab/yeema/ErrorExplaination/cambridge.gps.semanticDict_phrase_v5.json').read())
     tmp_miniparCol = eval(open('/home/nlplab/yeema/grammarpat/minipar.collocation.json').read())
     tmp_pw = open('/home/nlplab/yeema/problemWords/problem.col.v2').readlines()
+
     for pos, values in tmp_dictWord.items():
         for head,value in values.items():
             dictWord[pos][head] = value
-            
+
     for key,phrase in tmp_phrase.items():
         for p,pat in phrase.items():
             phraseV[key][p] = pat
-            
+
     for head,values in tmp_dictPhrase.items():
         for attr,value in values.items():
             dictPhrase[head][attr] = value
-            
+
     for head,values in tmp_dictDef.items():
         for pos,value in values.items():
             dictDef[head][pos] = value
-    
+
     for head,values in tmp_miniparCol.items():
         for pat,tails in values.items():
             for tail, c in tails.items():
