@@ -15,6 +15,8 @@ import spacy
 from nltk.tokenize import sent_tokenize,word_tokenize
 import requests
 import json
+from linggle_api import Linggle
+
 
 GEC_API = 'https://whisky.nlplab.cc/translate/?text={}'
 ab = re.compile(r"\w*'\w*|\w*’\w*")
@@ -30,6 +32,7 @@ app = Flask(__name__)
 tagger = GeniaTagger('/home/nlplab/yeema/geniataggerPython/geniatagger-3.0.2/geniatagger')
 wordnet_lemmatizer = WordNetLemmatizer()
 nlp = spacy.load('en')
+ling = Linggle()
 
 dictWord = defaultdict(lambda: defaultdict(list))
 phraseV = defaultdict(lambda: defaultdict(list))
@@ -58,14 +61,6 @@ def query_entry():
         
     return jsonify(res)
 
-@app.route('/color',methods = ['POST'])
-def query_color():
-    string = request.form['sent']
-    pos = request.form['pos']
-    pos = [int(p) for p in pos.split('\t')]
-    if pos[1]<len(string):
-        return string[:pos[0]]+'<span style="color:red">%s</span>'%string[pos[0]:pos[1]]+string[pos[1]:]
-
 @app.route('/GEC',methods=['POST'])
 def query_GEC():
     string = request.form['sent']
@@ -81,16 +76,40 @@ def query_GEC():
         htmlize(result,res,'GEC')
     return jsonify(res)
 
+@app.route('/linggle_go',methods=['POST'])
+def query_linggle():
+    string = request.form['sent']
+    edits = requests.get(GEC_API.format(string))
+    edits = eval(edits.text)
+    correction = edits['word_diff_by_sent']
+    res = {}
+    if correction:
+        correction = beautify(correction[0])
+        result = defaultdict(lambda: defaultdict())
+        explain(correction,result,'linggle')
+        htmlize(result,res,'linggle')
+        print(res)
+    return jsonify(res)
+
+@app.route('/linggle', methods=['POST'])
+def linggle():
+    query = request.form['sent']
+    return jsonify(ling[query])
+
 def htmlize(result,res,mode):
     myPanel = ''
 #     {'a':'<ul><li>'+'</li><li>'.join(['aaa','aaaa'])+'</li></ul>','b':'<ul><li>'+'</li><li>'.join(['bbb','bbbb']),'c':'<ul><li>'+'</li><li>'.join(['aaa','aaaa'])+'</li></ul>','d':'<ul><li>'+'</li><li>'.join(['bbb','bbbb']),'e':'<ul><li>'+'</li><li>'.join(['aaa','aaaa'])+'</li></ul>','f':'<ul><li>'+'</li><li>'.join(['bbb','bbbb'])}
-    for id,mod in result.items():
-        # res['%d\tpos'%(id)] = '%d\t%d'%(mod['pos'][0],mod['pos'][1])
-        tmp = '<ul><li> %s </li></ul>'%('</li><li>'.join([r for r in mod['body'] if r.replace('<p></p>','').strip()]))
-        myPanel += '<div class="card shadow-sm rounded bg-white">'+'<div class="card-header" id="heading%d">'%(id)+'<h2 class="mb-0">'+'<button class="btn collapsed" type="button" data-toggle="collapse" data-target="#collapse%d" aria-expanded="false" aria-controls="collapse%d" data-edit="edit%d">'%(id,id,id)+'%s'%(mod['header'])+ '</button>'+'</h2>'+'</div>'+'<div id="collapse%d" class="collapse" aria-labelledby="heading%d" data-parent="#accordion%s" data-edit="edit%d">'%(id,id,mode,id)+'<div class="card-body">'+'%s'%(tmp)+'</div>'+'</div>'+'</div>'
-
+    if mode != 'linggle':
+        for id,mod in result.items():
+            # res['%d\tpos'%(id)] = '%d\t%d'%(mod['pos'][0],mod['pos'][1])
+            tmp = '<ul><li> %s </li></ul>'%('</li><li>'.join([r for r in mod['body'] if r.replace('<p></p>','').strip()]))
+            myPanel += '<div class="card shadow-sm rounded bg-white">'+'<div class="card-header" id="heading%d">'%(id)+'<h2 class="mb-0">'+'<button class="btn collapsed" type="button" data-toggle="collapse" data-target="#collapse%d" aria-expanded="false" aria-controls="collapse%d" data-edit="edit%d">'%(id,id,id)+'%s'%(mod['header'])+ '</button>'+'</h2>'+'</div>'+'<div id="collapse%d" class="collapse" aria-labelledby="heading%d" data-parent="#accordion%s" data-edit="edit%d">'%(id,id,mode,id)+'<div class="card-body">'+'%s'%(tmp)+'</div>'+'</div>'+'</div>'
+        res['html'] = myPanel.replace('<li></li>','')
+    else:
+        for id, mod in result.items():
+            res[str(id)] = mod['linggle']
     res['sent'] = result[0]['sent']
-    res['html'] = myPanel.replace('<li></li>','')
+    
 
 
 dictDet = {'some' :"<b>Some</b> is usually used to show that there is a quantity of something or a number of things or people, without being precise. It is used with uncountable nouns and plural countable nouns.",
@@ -419,6 +438,8 @@ def find_patterns(parse,target):
             pat = ' '.join(pat.split())
             head = head.lower()
             pat_example = ' '.join([s[0] for s in sent])
+            if len(pat_example.split())>0 and pat_example.split()[-1] == 'the':
+                continue
             whs = [wh for wh in ['how' , 'who' , 'what', 'when','why','where'] if wh in pat]
             if whs:
                 for wh in whs:
@@ -518,18 +539,21 @@ def explain_VT_error(head,correction,pattern,ex):
             elif not df[0]:
                 emp.append(merge_def(df))
         if Ts and not Is and not emp:
-            output.append("For all the situations, the verb <b>%s</b> is not followed by a preposition <b>%s</b> because <b>%s</b> is a transitive verb."%(head,deletion.search(correction).group(1),head))
+            output.append("%s is a transitive verb and needs an object instead of a preposition (e.g. %s)."%(head[0].upper()+head[1:],deletion.search(correction).group(1)))
         elif Ts and Is:
-            output.append("The verb <b>%s</b> can be both transitive and intransitive verb. When it means %s, it is a transitive verb. However, when it describes that %s, it represents a intransitive verb."%(head,' or '.join(Ts[:2]),' or '.join(Is[:2])))
+            output.append("<b>%s</b> can be both transitive and intransitive verb. When it means %s, it is a transitive verb. However, when it describes that %s, it represents a intransitive verb."%(head[0].upper()+head[1:],' or '.join(Ts[:2]),' or '.join(Is[:2])))
+        elif Ts:
+            output.append("<b>%s</b> is a transitive verb and needs an object instead of a preposition (e.g. %s) when it means %s."%(head[0].upper()+head[1:],deletion.search(correction).group(1),Ts[0]))
         elif emp:
-            output.append("Normally, the verb <b>%s</b> is not followed by a preposition <b>%s</b> because <b>%s</b> is a transitive verb. Besides, it means %s."%(head,deletion.search(correction).group(1),head,emp[0]))
+            output.append("<b>%s</b> is a transitive verb and needs an object instead of a preposition (e.g. %s) when it means %s."%(head[0].upper()+head[1:],deletion.search(correction).group(1),emp[0]))
+
         tmp = explain_pattern(ex,head,'V',pattern)
         if type(tmp) == list:
             output.extend(tmp)
         else:
             output.append(tmp)
     else:
-        output.append("Normally, the verb <b>%s</b> is not followed by a preposition <b>%s</b> because <b>%s</b> is a transitive verb."%(head,deletion.search(correction).group(1),head))
+        output.append("<b>%s</b> is a transitive verb and needs an object instead of a preposition (e.g. %s)."%(head[0].upper()+head[1:],deletion.search(correction).group(1)))
         tmp = explain_pattern(ex,head,'V',pattern)
         if type(tmp) == list:
             output.extend(tmp)
@@ -551,11 +575,11 @@ def explain_VI_error(head,correction,pattern,ex):
                 Ts.append(merge_def(df))
                 
         if Is and not Ts:
-            output.append("The verb <b>%s</b> is absolutely an intransitive verb and it means %s."%(head,' or '.join(Is[:2])))
+            output.append("<b>%s</b> is absolutely an intransitive verb and it means %s."%(head[0].upper()+head[1:],' or '.join(Is[:2])))
         elif Ts:
-            output.append("The verb <b>%s</b> is an intransitive verb here which means %s. However, it can be transitive sometimes depending on the scenerio."%(head,' or '.join(Is[:2])))
+            output.append("<b>%s</b> is an intransitive verb here which means %s. However, it can be transitive sometimes depending on the scenerio."%(head[0].upper()+head[1:],' or '.join(Is[:2])))
         else:
-            output.append("Normally, the verb <b>%s</b> is necessarily followed by a preposition <b>%s</b> because <b>%s</b> is a intransitive verb."%(head,addition.search(correction).group(1),head))
+            output.append("<b>%s</b> is a intransitive verb and needs a preposition (e.g. %s)."%(head[0].upper()+head[0][1:],addition.search(correction).group(1)))
             tmp = explain_pattern(ex,head,'V',pattern)
             if type(tmp) == list:
                 output.extend(tmp)
@@ -692,22 +716,22 @@ def explain_pattern(ex,head,part,pattern):
     if pattern == ex[0].split('%')[0]:
         if pattern[-1].isupper():
             tmp = []
-            tmp.append('The usage of <b>%s</b> is <b>%s</b>.'%(head,pattern))
+            tmp.append('The usage of <b>%s</b>:\t<b>%s</b>'%(head,pattern))
             tmp.append(str_example%('For example:\t%s'%('\t'.join(ex[2][:-1]))))
             output.append('<br>'.join(tmp))
         else:
             tmp = []
-            tmp.append('The usage of <b>%s</b> is <b>%s</b>.'%(head,pattern.replace(part,head)))
+            tmp.append('The usage of <b>%s</b>:\t<b>%s</b>'%(head,pattern))
             tmp.append(str_example%('For example:\t%s'%('\t'.join(ex[2][:-1]))))
             output.append('<br>'.join(tmp))
     else:
         tmp = []
-        if ex[0].split('%')[0].replace(part,head)[:3] != '(v)':
-            tmp.append('The usage of <b>%s</b> is <b>%s</b>.'%(head,'" or "'.join([ex[0].split('%')[0].replace(part,head),pattern.replace(part,head)])))
+        if ex[0].split('%')[0][:3] != '(v)':
+            tmp.append('The usage of <b>%s</b>:\t<b>%s</b>'%(head,' or '.join([ex[0].split('%')[0],pattern])))
         else:
-            tmp.append('The usage of <b>%s</b> is <b>%s</b>.'%(head,ex[0].split('%')[0].replace(part,head)))
+            tmp.append('The usage of <b>%s</b>:\t<b>%s</b>'%(head,ex[0].split('%')[0]))
         tmp.append(str_example%('For example:\t%s'%('\t'.join(ex[2][:-1]))))
-        output.append('br'.join(tmp))
+        output.append('<br>'.join(tmp))
     if miniparCol[head][ex[0].split('%')[0]]:
         _pos = {'ADJ':'adjective','V':'verb','N':'noun'}
         if output:
@@ -895,7 +919,13 @@ def check_S(word,lemma):
         return True
     else:
         return False
-        
+
+def check_both(target,gps):
+    cp = ' '.join(target)
+    for pattern,head,part,ex,pos in gps:
+        if ex == cp:
+            return [pattern,head,part,ex,pos]
+
 def explain_time_error(head):
     res = []
 #     in main part of the day
@@ -1222,8 +1252,12 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
             gps = [(pattern,head,part,ex,1) if correction.find(ex) < threshold else (pattern,head,part,ex,-1) for pattern,head,part,ex in gps]
             isTo = focus=='to'
             if not any(p>0 and isTo  for _,_,part,_,p in gps):
-                gps = gps[::-1]
-                gps = sorted(gps,key = lambda x: pw_ratio[x[1]][(focus,'')][x[4]],reverse = True)
+                tmp = check_both(target,gps)
+                if tmp:
+                    gps = [tmp]
+                else: 
+                    gps = gps[::-1]
+                    gps = sorted(gps,key = lambda x: pw_ratio[x[1]][(focus,'')][x[4]],reverse = True)
             else:
                 headhalf = sorted([g for g in gps if g[4]>0],key = lambda x: pw_ratio[x[1]][(focus,'')][x[4]],reverse = True)
                 tailhalf = [g for g in gps[::-1] if g[4]<1]
@@ -1486,11 +1520,6 @@ def leave_error(correction,lists):
         return input_cor,input_split,start
 def grep_error(string,lists,error,base,mod_list):
     start = 0
-    # for l in lists:
-    #     idx = string.find(l,start)
-    #     error.append((l,base+idx,base+idx+len(l)))
-    #     start = idx+1
-    # return
     for matchobj in lists:
         idx = string.find(matchobj, start)
         after = '<span class="edit explain edit{error_id}">{edits}</span>'.format(error_id = len(error),edits = matchobj)
@@ -1508,19 +1537,63 @@ def myreplace(string,idx,before,after):
         return string
     else:
         return
+def find_linggle(sent,key):
+    sent = sent.split()
+    idx = sent.index(key)
+    prev = ""
+    sub = ""
+    i = idx-1
+    while i >= 0 :
+        if sent[i][:2] != '[-':
+            prev = sent[i].replace('{+','').replace('+}','').strip()
+            break
+        elif sent[i][-2:]!='-]':
+            prev = addition.search(sent[i]).group(1)
+            break
+        i -= 1
 
-def grep_error_GEC(string,b_lists,lists,errors,mod_list):
+    i = idx+1
+    while i < len(sent):
+        if sent[i][:2]!='[-':
+            sub = sent[i].replace('{+','').replace('+}','').strip()
+            break
+        elif sent[i][-2:]!='-]':
+            sub = addition.search(sent[i]).group(1)
+            break
+        i += 1
+    return prev,sub
+
+
+
+def grep_error_GEC(string,b_lists,lists,errors,mod_list,result,mode):
     error_id = len(errors)
     start = 0
+    sent = string
     for before, matchobj in zip(b_lists, lists):
         idx = string.find(before, start)
         if matchobj[0]:
-            after = '<span class="edit deletion edit{error_id}">{delete}</span> <span class="edit addition edit{error_id}">{insert}</span>'.format(
-                error_id=error_id, delete=matchobj[0], insert=matchobj[1])
+            if mode == 'GEC':
+                after = '<span class="edit deletion edit{error_id}">{delete}</span> <span class="edit addition edit{error_id}">{insert}</span>'.format(
+                    error_id=error_id, delete=matchobj[0], insert=matchobj[1])
+            else:
+                after = '<span class="edit deletion edit{error_id} active" data-edit="{error_id}" >{delete}</span> <span class="edit addition edit{error_id} active" data-edit="{error_id}">{insert}</span>'.format(
+                    error_id=error_id, delete=matchobj[0], insert=matchobj[1])
+                prev,sub = find_linggle(sent,'[-%s-]{+%s+}'%(matchobj[0],matchobj[1]))
+                result[error_id]['linggle'] = ' '.join([word for word in [prev,matchobj[0]+'/'+matchobj[1],sub] if word.strip()])
         elif matchobj[2]:
-            after = '<span class="edit deletion edit{error_id}">{delete}</span>'.format(error_id=error_id, delete=matchobj[2])
+            if mode == 'GEC':
+                after = '<span class="edit deletion edit{error_id}">{delete}</span>'.format(error_id=error_id, delete=matchobj[2])
+            else:
+                after = '<span class="edit deletion edit{error_id} active" data-edit="{error_id}">{delete}</span>'.format(error_id=error_id, delete=matchobj[2])
+                prev,sub = find_linggle(sent,'[-{delete}-]'.format(delete = matchobj[2]))
+                result[error_id]['linggle'] = (prev+' ?'+matchobj[2]+' '+sub).strip()
         else:
-            after = '<span class="edit addition edit{error_id}">{insert}</span>'.format(error_id=error_id, insert=matchobj[3])
+            if mode == 'GEC':
+                after = '<span class="edit addition edit{error_id}">{insert}</span>'.format(error_id=error_id, insert=matchobj[3])
+            else:
+                after = '<span class="edit addition edit{error_id} active" data-edit="{error_id}">{insert}</span>'.format(error_id=error_id, insert=matchobj[3])
+                prev,sub = find_linggle(sent,'{+%s+}'%(matchobj[3]))
+                result[error_id]['linggle'] = (prev+' ?'+matchobj[3]+' '+sub).strip()
         string = myreplace(string,idx,before, after)
         error_id += 1
         start = idx+1
@@ -1539,11 +1612,11 @@ def explain(corrections,result,mode):
         correction = beautify(correction)
         final_list.append(correction)
         entails_sent = rephrase(correction)
-        if mode == 'GEC':
-            grep_error_GEC(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction),re.findall(r'\[- *([^\[\]]*?) *-\] *\{\+ *([^\[\]]*?) *\+\}|\[- *([^\[\]]*?) *-\]|\{\+ *([^\[\]]*?) *\+\}',correction),error_list,mod_list) 
-            grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction),error_list,accumulate_len,[])
+        if mode != 'explain':
+            grep_error_GEC(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\{\}]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\{\}]* *\+\}',correction),re.findall(r'\[- *([^\[\]]*?) *-\] *\{\+ *([^\[\]]*?) *\+\}|\[- *([^\[\]]*?) *-\]|\{\+ *([^\[\]]*?) *\+\}',correction),error_list,mod_list,result,mode) 
+            grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\{\}]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\{\}]* *\+\}',correction),error_list,accumulate_len,[])
         else:
-            grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction),error_list,accumulate_len,mod_list)
+            grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\{\}]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\{\}]* *\+\}',correction),error_list,accumulate_len,mod_list)
         accumulate_len += len(correction)+1
         while deletion.search(correction) or addition.search(correction):
             if prevs:

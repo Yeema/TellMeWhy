@@ -20,3 +20,9 @@ function renderGECResult(data){
     console.log(data['sent'])
     write_result.innerHTML = data['sent'];
 }
+
+function renderLinggleResult(data){
+    var write_result = document.getElementById('write-aes');
+    console.log(data['sent'])
+    write_result.innerHTML = data['sent'];
+}

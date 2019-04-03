@@ -1,0 +1,53 @@
+.linggle.search-result table tbody tr td.percent,
+.linggle.search-result table tbody tr td.count,
+.linggle.search-result table tbody tr td.example {
+  vertical-align: middle;
+}
+  
+  .linggle.search-result .progress {
+    height: 5px;
+    background: #ededed;
+    box-shadow: none;
+  }
+  
+  .linggle.search-result .progress-bar {
+    background: #cc0000;
+    box-shadow: none;
+  }
+  
+  .linggle.search-result .examples span.highlight {
+    color: #cc0000;
+  }
+  
+  .linggle.navbar {
+    border: 10px;
+    border-bottom: 1px solid #cbcbcb;
+    border-radius: 0;
+    background: white;
+    box-shadow: 0 1px 3px rgba(203,203,203,0.1), 0 1px 3px rgba(203,203,203,0.2);
+    padding: 5px;
+    margin-bottom: 0;
+  }
+  
+  
+  
+  .linggle.navbar .navbar-form input {
+    width: 500px;
+    background: rgba(203,203,203,0.2);
+  }
+  
+  .linggle.navbar .navbar-form input[type="text"] {
+    font-size: 1.1em;
+  }
+  
+  .linggle.navbar .navbar-form input:focus, input[type]:focus, .uneditable-input:focus {
+      background: white;
+      border-color: #cc0000;
+      box-shadow: none;
+      outline: 0 none;
+  }
+
+.btn.btn-green{
+    border-color: darkblue;
+    color: darkblue;
+}

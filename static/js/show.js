@@ -24,6 +24,7 @@ $(document).ready(function(){
                     const buttons = document.querySelectorAll('button');
                     console.log(buttons)
                     buttons.forEach(function(element) {
+                        console.log('click button, gec-tab ');
                           element.addEventListener('click', show_edit, false);
                     });
                 }
@@ -40,34 +41,26 @@ $(document).ready(function(){
                     const buttons = document.querySelectorAll('button');
                     console.log(buttons)
                     buttons.forEach(function(element) {
+                        console.log('click button, explain-tab ');
                           element.addEventListener('click', show_edit, false);
                     });
                 }
             })
         }else{
-            console.log('Linggle!')
+            $.ajax({
+                method: 'POST',
+                data: { "sent" : sentence },
+                dataType: 'json',
+                url: '/linggle_go',
+                success: function(response) {
+                    global_response = response;
+                    renderLinggleResult(response);
+                }
+            })
         }
 
     });
     
-    
-    const buttons = document.querySelectorAll('button');
-    console.log(buttons)
-    buttons.forEach(function(element) {
-        if(element.id!='send-aes'){
-            var mode = $('.nav-link.active').attr('id');
-            if (mode == 'gec-tab'){
-                element.addEventListener('click',function(event){
-                    changeSpan(event,global_response);
-                },false);
-            }else if (mode == 'explain-tab'){
-                element.addEventListener('click',function(event){
-                    colorWord(event,global_response);
-                },false);
-            }
-            
-        }
-    });
     
     var input = document.getElementById("write-aes");
     input.addEventListener("keyup", function(event) {
@@ -76,37 +69,27 @@ $(document).ready(function(){
        document.getElementById("send-aes").click();
       }
     });
+    
+    $(document).on('click','.edit',function(){
+        var mode = $('.nav-link.active').attr('id');
+        if (mode == 'linggle-tab'){
+            index = $(this).data('edit');
+            console.log(index);
+            SearchResult.query(global_response[index]);
+            var searchBar = $('#search-bar');
+            searchBar.val(global_response[index])
+            $('.linggle.search-result').show()
+        }
+    });
 });
 
 function show_edit(event, response){
     var edit_id = $(this).data('edit');
+    var mode = $('.nav-link.active').attr('id');
     console.log(edit_id);
-    $(`span.edit:not(.${edit_id})`).removeClass('active');
-    $(`span.${edit_id}`).toggleClass('active');
-//     $.ajax({
-//             method: 'POST',
-//             data: {'pos':respond[event.target.id.substring(3).concat('\tpos')] , 'sent':respond['sent']},
-//             dataType: 'text',
-//             url: '/color',
-//             success: function(response) {
-//                 document.getElementById('write-aes').innerHTML = response;
-//             }
-//    })
-}
-
-function changeSpan(event,response){
-    console.log(event.target.text);
-    var labelname = $(event.target.id).text();
-    show_edit
-//     if(labelname.startsWith("Replace")){
-//         var x = document.getElementById('deletion'+event.target.id.substring(3));
-//         var y = document.getElementById('addition'+event.target.id.substring(3));   
-//         x.style.color = '#00FF00';
-//     }else if(labelname.startsWith("Omit")){
-//         var x = document.getElementById('deletion'+event.target.id.substring(3));
-//         x.style.color = '#00FF00';
-//     }else{
-//         var x = document.getElementById('addition'+event.target.id.substring(3));
-//         x.style.color = '#00FF00';
+//     if(mode!='linggle-tab'){
+        $(`span.edit:not(.${edit_id})`).removeClass('active');
+        $(`span.${edit_id}`).toggleClass('active');
 //     }
 }
+
