@@ -20,13 +20,13 @@ multi_delandadd = re.compile(r'(\[-([^\[\]]*?)-\] *\{\+([^\{\}]*?)\+\} *)+')
 str_example = '<div class="px-2 py-1 mt-2 text-monospace"><p>%s</p></div>'
 
 MONTH = set("january,february,march,april,may,june,july,august,september,october,november,december".split(','))
-WEATHER = set("spring,summer,fall,autumn,winter".split(","))
+SEASONS = set("spring,summer,fall,autumn,winter".split(","))
 DATES = set("monday,tuesday,wednesday,thursday,friday,saturday,sunnday".split(","))
 HOLIDAY = set("christmas,easter,hannukkah,ramadan".split(","))
 CLOCKTIME = set("midnight/noon/dawn/lunch".split('/'))
 POD = set("morning/afternoon/evening".split("/"))
 TIME = set(list(MONTH)+\
-                list(WEATHER)+\
+                list(SEASONS)+\
                 list(DATES)+\
                 list(HOLIDAY)+\
                 list(CLOCKTIME)+\
@@ -527,7 +527,7 @@ def explain_time_error(head):
         res.append("Compared:\ton Christmas Day, on Easter Sunday")
     elif head in CLOCKTIME:
         res.append("When you refer to <b>main points of time in the day (e.g: midnight/noon/dawn/lunch)</b>, use at + time.")
-        res.append(str_example%("For example:\tWe usually open our presents at %s."%(heads)))
+        res.append(str_example%("For example:\tWe usually open our presents at %s."%(head)))
     elif head == 'weekend':
         res.append("When you refer to 'weekend', use at the weekend. BUT (American English) on the weekend")
         res.append(str_example%("For example:\tWhat are you doing at the weekend?"))

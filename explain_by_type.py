@@ -100,10 +100,10 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                     output.append(find_idioms_from_gps(gps))
             else:
                 idioms = find_idioms(entails_sent,target)
-                if idioms:
+                if idioms[0] and idioms[1]:
                     tmp = []
                     tmp.append('"<b>%s</b>" is a phrase.'%(idioms[0]))
-                    tmp.append("This means that %s."%('\t'.join(list(app.dictPhrase[idioms[0]].values())[0][0]).strip()))
+                    tmp.append("This means that %s."%('\t'.join(list(dictPhrase[idioms[0]].values())[0][0]).strip()))
                     output.append("<p>%s</p>"%('</p><p>'.join(tmp)))
     else:
         delset,addset = compare_lemma(correction)
@@ -225,7 +225,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                 output.append(dictDet[d_lemma])
                 output.append(dictDet[a_lemma])
 
-        elif not parts[0].upper() in pos_map or not any([part for part in ['v','a','n'] if d_lemma in app.dictWord[pos_map[part.upper()]]]):
+        elif not parts[0][0].upper() in pos_map or not any([part for part in ['v','a','n'] if d_lemma in app.dictWord[pos_map[part.upper()]]]):
             if tuple(sorted([d_lemma,a_lemma])) in aux:
                 output.append('Tense error!')
             else:
@@ -437,7 +437,6 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
             output.append(find_N_meaning(nextwordN))
             done = True
         elif focus in det_s:
-            print('1324')
             if focus != 'that':
                 output.append("Use a determiner before a singular countable noun such as %s"%(nextwordN))
                 output.append(find_N_meaning(nextwordN))

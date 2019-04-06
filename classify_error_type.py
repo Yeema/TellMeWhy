@@ -20,12 +20,16 @@ def leave_error(correction,lists):
     input_split = []
     if head or tail:
         if head and tail:
+            head = head.lower()
+            tail = tail.lower()
             start = correction.find(head)
             idx = start + len(head)
         elif head:
+            head = head.lower()
             start = correction.find(head)
             idx = start + len(head)
         elif tail:
+            tail = tail.lower()
             start = correction.find(tail)
             idx = start + len(tail)
         if idx < len(correction):
@@ -125,7 +129,7 @@ def explain(corrections,result,mode):
     for correction in sent_tokenize(corrections):
         correction = beautify(correction)
         final_list.append(correction)
-        entails_sent = rephrase(correction)
+        entails_sent = rephrase(correction.lower())
         if mode != 'explain':
             grep_error_GEC(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\{\}]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\{\}]* *\+\}',correction),re.findall(r'\[- *([^\[\]]*?) *-\] *\{\+ *([^\[\]]*?) *\+\}|\[- *([^\[\]]*?) *-\]|\{\+ *([^\[\]]*?) *\+\}',correction),error_list,mod_list,result,mode)
             grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\{\}]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\{\}]* *\+\}',correction),error_list,accumulate_len,[])
@@ -178,7 +182,7 @@ def explain(corrections,result,mode):
             idx = min([case1, case2,case3])
             idx = [case1, case2,case3].index(idx)
 
-            input_cor,input_split,threshold = leave_error(correction,replacelist[idx])
+            input_cor,input_split,threshold = leave_error(correction.lower(),replacelist[idx])
             # replace
             if idx == 0:
                 tmp = explain_replace(input_cor,entails_sent,input_split,threshold,done)
