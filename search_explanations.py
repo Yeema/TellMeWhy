@@ -62,7 +62,7 @@ def find_meaning(lista,listb,a,b):
         eng = lista[int(index/len(wordb))][2][0][1]
         ch = " ( "+lista[int(index/len(wordb))][2][0][2] +" )"
     if braces.search(eng):
-            eng = eng.replace(braces.search(eng)[0],'')
+            eng = eng.replace(braces.search(eng).group(0),'')
     attra = eng+ch
 
     if len(listb[index%len(wordb)][2][0]) == 2:
@@ -72,7 +72,7 @@ def find_meaning(lista,listb,a,b):
         eng = listb[index%len(wordb)][2][0][1]
         ch = " ( "+ listb[index%len(wordb)][2][0][2]+" )"
     if braces.search(eng):
-            eng = eng.replace(braces.search(eng)[0],'')
+            eng = eng.replace(braces.search(eng).group(0),'')
     attrb = eng + ch
     return attra,attrb
 
