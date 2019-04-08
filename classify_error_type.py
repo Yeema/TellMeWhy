@@ -129,7 +129,7 @@ def explain(corrections,result,mode):
     for correction in sent_tokenize(corrections):
         correction = beautify(correction)
         final_list.append(correction)
-        entails_sent = rephrase(correction.lower())
+        entails_sent = rephrase(correction)
         if mode != 'explain':
             grep_error_GEC(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\{\}]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\{\}]* *\+\}',correction),re.findall(r'\[- *([^\[\]]*?) *-\] *\{\+ *([^\[\]]*?) *\+\}|\[- *([^\[\]]*?) *-\]|\{\+ *([^\[\]]*?) *\+\}',correction),error_list,mod_list,result,mode)
             grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\{\}]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\{\}]* *\+\}',correction),error_list,accumulate_len,[])
@@ -182,7 +182,7 @@ def explain(corrections,result,mode):
             idx = min([case1, case2,case3])
             idx = [case1, case2,case3].index(idx)
 
-            input_cor,input_split,threshold = leave_error(correction.lower(),replacelist[idx])
+            input_cor,input_split,threshold = leave_error(correction,replacelist[idx])
             # replace
             if idx == 0:
                 tmp = explain_replace(input_cor,entails_sent,input_split,threshold,done)

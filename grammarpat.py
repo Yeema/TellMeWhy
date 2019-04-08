@@ -1,31 +1,6 @@
 from app import *
 import re
 
-dictDet = {'some' :"<b>Some</b> is usually used to show that there is a quantity of something or a number of things or people, without being precise. It is used with uncountable nouns and plural countable nouns.",
-'a2some' : "When you want to emphasize that you do not know the identity of a person or thing, or you think their identity is not important, you can use <b>some</b> with a sigular countable noun, instead of a or an.",
-'any' : "<b>Any</b> is used before pluarl nouns and uncountable nouns when you are refferring to or asking whether a quantity of something that may or may not exist.",
-'another' : "<b>Another</b> is used with singular countable nouns to talk about an additional person or thing of the same type as you have already mentioned.",
-'other' : "<b>Other</b> is used with plural nouns, or occasionally with uncountable nouns.",
-'enough' : "<b>Enough</b> is used to say that there is as much of something as is needed, or as many things as are needed. You can therefore use enough in front of uncountable nounds or plural nouns.",
-'few' : "When you want to emphasize that there is only a samll number of things of a particular kind, you use <b>few</b> with a plural countable noun.",
-'many' : "<b>Many</b> indicates that there is a large number of things, without being very precise. You use <b>many</b> with a plural countable noun.",
-'most' : "<b>Most</b> indicates nearly all of a group or amount. You use <b>most</b> with an uncountable noun or a plural countable noun.",
-'several' : "<b>Several</b> usually indicates an imprecise number that is not very large, but it is more than two. You use <b>several</b> with a plural countable noun.",
-'all' : "<b>All</b> includes every person or thing of a particaular kind. You use <b>all</b> with an uncountable noun or a plural countable noun.",
-'both' : "<b>Both</b> is used to say something about two people or things of the same kind. You use both with a plural countable noun." ,
-'either' : "<b>Either</b> is used to talk about two things, but usaully indicates that only one of the two is invloved. You use either with a singular countable noun.",
-'each' : "<b>Each</b> is used when you are thinking about the members as individuals. You use <b>each</b> with a singular countable noun.",
-'every' : "<b>Every</b> is used when you are making a general statement about all of them. You use <b>every</b> with a singular countbale noun.",
-'little' : "<b>Little</b> is used to emphasize only a small amount of something. You use <b>little</b> with uncountable nouns.",
-'much' : "<b>Much</b> is used to emphasize a large amount. You use <b>much</b> with uncountable nouns.",
-'this' : "<b>This</b> is used to talk about people or things that are very obvious in the situation that you are in.",
-'these' :  "<b>There</b> is used to talk about people or things that are very obvious in the situation that you are in. You use <b>these</b> with a plural countable noun.",
-'that' : "<b>That</b> is used to  talk about people or things that are you can see but that are not very cloased to you.",
-'those' : "<b>Those</b> is used to  talk about people or things that are you can see but that are not very cloased to you. You use <b>those</b> with a plural countable noun.",
-'the':"<b>The</b> is used before a noun when <b>a</b> has been mentioned or nouns are sprecific names or proper nouns.",
-'a':"<b>A<b> is used for talking about a person or thing when it is not important or not clear.",
-'an':"<b>An<b> is used for talking about a person or thing when it is not important or not clear."}
-
 verbpat =  ['V that', 'V n that', 'V n', 'V pron-refl', 'V n of n', 'V n to inf', 'V in n', 'V wh', 'V adv',\
 'V n from n', 'V pron-refl with n', 'V pron-refl by n', 'V n adj', 'V for n', 'V n in n', \
 'V to inf', 'V n for n', 'V to n', 'V on n', 'be V-ed in n', 'be V-ed as n', 'be V-ed with n',\
@@ -76,7 +51,7 @@ adjpat = ['ADJ n', 'ADJ to n', 'ADJ and adj', 'n ADJ', 'ADJ that', 'ADJ in n', '
              'N through n', 'ADJ around n', 'N over n', 'N for n', 'N after n', 'ADJ across n']
 
 selfWords = {'oneself', 'myself', 'ourselves', 'yourself', 'himself', 'herself', 'themselves','me','him','you','her','them','it'}
-pgPreps = 'under|without|around|round|in_favor_of|_|about|after|against|among|as|at|between|behind|by|for|from|in|into|of|on|upon|over|through|to|toward|forward|off|on|across|towards|with|out'.split('|')
+pgPreps = 'under|without|around|round|in_favor_of|_|about|after|against|among|as|at|between|behind|by|for|from|in|into|of|on|upon|over|through|to|toward|forward|off|on|across|towards|with|out|during'.split('|')
 otherPreps ='out|off|down|up|across'.split('|')
 reserveWord = {'for', 'over', 'at', 'about', 'up', 'by', 'under', 'among', 'on', 'out', 'that', 'against', 'of', 'in', 'amount', 'to', 'between', 'toward', 'towards', 'down', 'from', 'as', 'through', 'around', 'and', 'off', 'into', 'without', 'with', 'after', 'across', 'behind'}
 allreserved = set()
@@ -199,6 +174,9 @@ def ngram_to_pat(words, lemmas, tags, chunks, start, end):
         elif isverbpat(lemmas[head_pos][0],pat.replace('pron-refl','n').replace('adj n','n')):
             mode = 'V'
             return pat.replace('adj n','n'),head_pos,change_start
+        elif isverbpat(lemmas[head_pos][0],pat.replace('pron-refl','n').replace('adj n','n').replace('-ing','n')):
+            mode = 'V'
+            return pat.replace('adj n','n'),head_pos,change_start
         elif isnounpat(lemmas[head_pos][0],pat):
             mode = 'N'
             return pat,head_pos,change_start
@@ -244,6 +222,9 @@ def ngram_to_pat(words, lemmas, tags, chunks, start, end):
         elif pat[:3] =='(n)' and isadjpat(lemmas[head_pos][0],pat[4:].replace('amount N','n N')):#(n)
             mode = 'ADJ'
             return pat[4:].replace('amount N','n N'),head_pos,change_start
+        elif isadjpat(lemmas[head_pos][0],pat.replace('pron-refl','n').replace('adj n','n')):
+            mode = 'ADJ'
+            return pat.replace('adj n','n'),head_pos,change_start
     return "" ,start,change_start
 
 def isverbpat(key,pat):

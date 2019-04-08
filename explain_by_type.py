@@ -26,15 +26,36 @@ det_p = set("the,some,these,those,much,many,any,all,most,enough,several,other,fe
 vowel = set([i for i in 'aeiouh'])
 vowelMap = {'a':['apple','apartment'],'e':['elephant','element'],'i':['igloo','island'],'o':['oven','octopus'],'u':['umbrella','unexpected error'],'h':['hour','honour']}
 
-
-nlp = spacy.load('en')
+dictDet = {'some' :"<b>Some</b> is usually used to show that there is a quantity of something or a number of things or people, without being precise. It is used with uncountable nouns and plural countable nouns.",
+'a2some' : "When you want to emphasize that you do not know the identity of a person or thing, or you think their identity is not important, you can use <b>some</b> with a sigular countable noun, instead of a or an.",
+'any' : "<b>Any</b> is used before pluarl nouns and uncountable nouns when you are refferring to or asking whether a quantity of something that may or may not exist.",
+'another' : "<b>Another</b> is used with singular countable nouns to talk about an additional person or thing of the same type as you have already mentioned.",
+'other' : "<b>Other</b> is used with plural nouns, or occasionally with uncountable nouns.",
+'enough' : "<b>Enough</b> is used to say that there is as much of something as is needed, or as many things as are needed. You can therefore use enough in front of uncountable nounds or plural nouns.",
+'few' : "When you want to emphasize that there is only a samll number of things of a particular kind, you use <b>few</b> with a plural countable noun.",
+'many' : "<b>Many</b> indicates that there is a large number of things, without being very precise. You use <b>many</b> with a plural countable noun.",
+'most' : "<b>Most</b> indicates nearly all of a group or amount. You use <b>most</b> with an uncountable noun or a plural countable noun.",
+'several' : "<b>Several</b> usually indicates an imprecise number that is not very large, but it is more than two. You use <b>several</b> with a plural countable noun.",
+'all' : "<b>All</b> includes every person or thing of a particaular kind. You use <b>all</b> with an uncountable noun or a plural countable noun.",
+'both' : "<b>Both</b> is used to say something about two people or things of the same kind. You use both with a plural countable noun." ,
+'either' : "<b>Either</b> is used to talk about two things, but usaully indicates that only one of the two is invloved. You use either with a singular countable noun.",
+'each' : "<b>Each</b> is used when you are thinking about the members as individuals. You use <b>each</b> with a singular countable noun.",
+'every' : "<b>Every</b> is used when you are making a general statement about all of them. You use <b>every</b> with a singular countbale noun.",
+'little' : "<b>Little</b> is used to emphasize only a small amount of something. You use <b>little</b> with uncountable nouns.",
+'much' : "<b>Much</b> is used to emphasize a large amount. You use <b>much</b> with uncountable nouns.",
+'this' : "<b>This</b> is used to talk about people or things that are very obvious in the situation that you are in.",
+'these' :  "<b>There</b> is used to talk about people or things that are very obvious in the situation that you are in. You use <b>these</b> with a plural countable noun.",
+'that' : "<b>That</b> is used to  talk about people or things that are you can see but that are not very cloased to you.",
+'those' : "<b>Those</b> is used to  talk about people or things that are you can see but that are not very cloased to you. You use <b>those</b> with a plural countable noun.",
+'the':"<b>The</b> is used before a noun when <b>a</b> has been mentioned or nouns are sprecific names or proper nouns.",
+'a':"<b>A<b> is used for talking about a person or thing when it is not important or not clear.",
+'an':"<b>An<b> is used for talking about a person or thing when it is not important or not clear."}
 
 def explain_replace(correction,entails_sent,correction_split,threshold,done = False):
     output = []
 #     output.append('[ replace type ]')
-    if deletion.search(correction).group(1) in grammarpat.allreserved:
+    if deletion.search(correction).group(1).lower() in grammarpat.allreserved:
         a_lemma = delandadd.search(correction).group(2)
-        # print('a_lemma',a_lemma)
         nextword,nextword_lemma = find_nextword(entails_sent,a_lemma,'N')
         nextdigit,nextdigit_lemma = find_nextword(entails_sent,a_lemma,'C')
         if nextword.lower() in search_explanations.TIME or nextdigit.isdigit():
@@ -97,13 +118,17 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                                     done = True
                                     break
                 if not done:
-                    output.append(find_idioms_from_gps(gps))
+                    idioms_result = find_idioms_from_gps(gps)
+                    if idioms_result:
+                        output.append(idioms_result)
+                    else:
+                        output.append("<p>The usage of %s: %s</p>"%(gps[0][1],gps[0][0]))
             else:
                 idioms = find_idioms(entails_sent,target)
                 if idioms[0] and idioms[1]:
                     tmp = []
                     tmp.append('"<b>%s</b>" is a phrase.'%(idioms[0]))
-                    tmp.append("This means that %s."%('\t'.join(list(dictPhrase[idioms[0]].values())[0][0]).strip()))
+                    tmp.append("This means that %s."%('\t'.join(list(app.dictPhrase[idioms[0]].values())[0][0]).strip()))
                     output.append("<p>%s</p>"%('</p><p>'.join(tmp)))
     else:
         delset,addset = compare_lemma(correction)
@@ -117,16 +142,16 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                 if d_lemma == a_lemma:
                     target = [delandadd.search(correction).group(2)]
                     gps = find_patterns(geniatag(' '.join(entails_sent)),target)
-                    if gps:
-                        for pattern,head,part,ex in gps:
-                            if ex.find(target[0]) > ex.find(head):
-                                if pattern.split()[-2] in grammarpat.allreserved:
-                                    output.append('The tense error is caused by <b>%s</b>.'%(pattern.split()[-2]))
-                                    break
-                                elif len(pattern.split()) and a_lemma != head:
-                                    output.append('The tense error is caused by <b>%s</b>.'%(head))
-                                    break
-                    output.append('Tense error!')
+#                     if gps:
+#                         for pattern,head,part,ex in gps:
+#                             if ex.find(target[0]) > ex.find(head):
+#                                 if pattern.split()[-2] in grammarpat.allreserved:
+#                                     output.append('The tense error is caused by <b>%s</b>.'%(pattern.split()[-2]))
+#                                     break
+#                                 elif len(pattern.split()) and a_lemma != head:
+#                                     output.append('The tense error is caused by <b>%s</b>.'%(head))
+#                                     break
+                    output.append('Verb Form Error!')
                 else:
                     output.append(explain_voc_semantic_error(correction,d_lemma,d_part,a_lemma,a_part))
             # countable uncountable?
@@ -148,7 +173,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
             output.append("<p>%s: %s</p><p>vs</p><p>%s: %s</p>"%(d_word,d_part,a_word,a_part))
         elif d_lemma in det_s.union(det_p) and a_lemma in det_s.union(det_p):
 #             an -> a
-            if d_lemma == 'an' and a_lemma == 'a':
+            if d_lemma.lower() == 'an' and a_lemma.lower() == 'a':
                 nextword,nextword_lemma = find_nextword(entails_sent,a_lemma)
                 if nextword[0] == 'h':
                     tmp = []
@@ -163,7 +188,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                     else:
                         output.append("Always use a (NOT an) before a word beginning with a consonant sound.")
 #             a -> an
-            elif d_lemma == 'a' and a_lemma == 'an':
+            elif d_lemma.lower() == 'a' and a_lemma.lower() == 'an':
                 nextword,nextword_lemma = find_nextword(entails_sent,a_lemma)
                 if nextword[0].lower() in vowel:
                     if nextword[0] == 'h':
@@ -172,7 +197,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                         output.append("Always use an (NOT a) before a word beginning with a vowel sound: <b>an %s</b> or <b>an %s</b>."%(vowelMap[nextword[0].lower()][0],vowelMap[nextword[0].lower()][1]))
                 elif nextword[0].isupper():
                     output.append("Use an (NOT a) before an abbreviation that begins with a vowel sound")
-            elif d_lemma == 'the' or a_lemma == 'the':
+            elif d_lemma.lower() == 'the' or a_lemma.lower() == 'the':
                 nextword,nextword_lemma = find_nextword(entails_sent,a_lemma,'N')
                 nextdigit,nextdigit_lemma = find_nextword(entails_sent,a_lemma,'C')
                 if nextword.lower() in search_explanations.TIME or nextdigit.isdigit():
@@ -183,7 +208,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                 else:
                     output.append(dictDet[d_lemma])
                     output.append(dictDet[a_lemma])
-            elif d_lemma=='any' and a_lemma in det_s.union(det_p):
+            elif d_lemma.lower()=='any' and a_lemma.lower() in det_s.union(det_p):
                 if a_lemma in ['each','every','all'] :
                     output.append('To refer to all the people or things in a group or category, use "each/every + singular countable noun" OR "all + plural countable noun".')
                     tmp = []
@@ -201,29 +226,29 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                 else:
                     output.append(dictDet[d_lemma])
                     output.append(dictDet[a_lemma])
-            elif d_lemma in det_p and a_lemma in det_s:
+            elif d_lemma.lower() in det_p and a_lemma.lower() in det_s:
                 nextword,nextword_lemma = find_nextword(entails_sent,a_lemma,'N')
                 if check_S(nextword,nextword_lemma):
                     output.append('<b>%s</b> is usually used with singular countable nouns.'%(a_lemma))
                     output.append(find_N_meaning(nextword))
                 else:
                     output.append("%s -> %s :  this case hasn't handled yet."%(d_lemma,a_lemma))
-            elif d_lemma in ['no','some'] and a_lemma == 'any':
+            elif d_lemma.lower() in ['no','some'] and a_lemma.lower() == 'any':
                 output.append('After negative words, you usaully use "any, anyone, anything, etc (Not some, someone, something, etc)".')
             elif 'at that moment' in ' '.join(entails_sent).lower():
                 output.append(" When you are telling a story or reporting what happened, use <b>at that moment</b>\t:\tAt that moment the car skidded on the ice and went off the road.")
-            elif d_lemma in det_s and a_lemma in det_p:
+            elif d_lemma.lower() in det_s and a_lemma.lower() in det_p:
                 nextword,nextword_lemma = find_nextword(entails_sent,a_lemma,'N')
                 if check_S(nextword,nextword_lemma):
                     output.append('<b>%s</b> is usually used with singular countable nouns. Besides, <b>%s</b> is usually used with uncountable nouns and plural countables (NOT with singular countable nouns)'%(d_lemma,a_lemma))
                 else:
                     output.append('<b>%s</b> is usually used with <b>uncountable nouns</b> such as %s.'%(a_lemma,nextword))
                     output.append(find_N_meaning(nextword,'U'))
-            elif d_lemma in det_p and a_lemma in det_s:
+            elif d_lemma.lower() in det_p and a_lemma.lower() in det_s:
                 output.append('<b>%s</b> is usually used with plural countable nouns. Besides, <b>%s</b> is usually used with singular countable nouns.'%(d_lemma,a_lemma))
             else:
-                output.append(dictDet[d_lemma])
-                output.append(dictDet[a_lemma])
+                output.append(dictDet[d_lemma.lower()])
+                output.append(dictDet[a_lemma.lower()])
 
         elif not parts[0][0].upper() in pos_map or not any([part for part in ['v','a','n'] if d_lemma in app.dictWord[pos_map[part.upper()]]]):
             if tuple(sorted([d_lemma,a_lemma])) in aux:
@@ -378,7 +403,11 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
                         if done:
                             break
             if not done:
-                output.append(find_idioms_from_gps(gps))
+                idioms_result = find_idioms_from_gps(gps)
+                if idioms_result:
+                    output.append(idioms_result)
+                else:
+                    output.append("<p>The usage of %s: %s</p>"%(gps[0][1],gps[0][0]))
         else:
 
             output.append('grammar error : missing prepositions or conjunctions')
@@ -431,13 +460,13 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
                 tmp.append("the beautiful")
                 output.append(rule+str_example%('</p><p>'.join(tmp)))
                 done = True
-        elif focus in det_p:
+        elif focus.lower() in det_p:
             output.append("Use a determiner before a plural countable noun such as %s"%(nextwordN))
             output.append(dictDet[focus.lower()])
             output.append(find_N_meaning(nextwordN))
             done = True
-        elif focus in det_s:
-            if focus != 'that':
+        elif focus.lower() in det_s:
+            if focus.lower() != 'that':
                 output.append("Use a determiner before a singular countable noun such as %s"%(nextwordN))
                 output.append(find_N_meaning(nextwordN))
                 done = True
@@ -458,13 +487,21 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
         if idx+1 < len(correction_split):
             target.append(' '.join([focus,correction_split[idx+1]]))
         gps = find_patterns(geniatag(' '.join(entails_sent)),target)
-        if focus in grammarpat.allreserved:
+        if focus.lower() in grammarpat.allreserved:
             if gps:
                 gps = [(pattern,head,part,ex,1) if correction.find(ex) < threshold else (pattern,head,part,ex,-1) for pattern,head,part,ex in gps]
                 isTo = target[0]=='to'
-                if not any(p>0 and isTo for _,_,part,_,p in gps):
+                if not any(p>0 for _,_,part,_,p in gps):
                     gps = gps[::-1]
                     gps = sorted(gps,key = lambda x: app.pw_ratio[x[1]][('',focus)][x[4]],reverse = True)
+                elif all(p>0 for _,_,part,_,p in gps):
+                    gps = gps[::-1]
+                    gps = sorted(gps,key = lambda x: app.pw_ratio[x[1]][('',focus)][x[4]],reverse = True)
+                else:
+                    headhalf = sorted([g for g in gps if g[4]>0],key = lambda x: app.pw_ratio[x[1]][('',focus)][x[4]],reverse = True)
+                    tailhalf = [g for g in gps[::-1] if g[4]<1]
+                    gps = headhalf + tailhalf
+                    
                 for pattern , head , part , _,_ in gps:
                     if head in  app.dictWord[part]:
                         if app.dictWord[part][head]:
@@ -518,7 +555,12 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
         else:
             if gps:
                 gps = [(pattern,head,part,ex,1) if correction.find(ex) < threshold else (pattern,head,part,ex,-1) for pattern,head,part,ex in gps]
+                if all(p>0 for _,_,part,_,p in gps):
+                    gps = gps[::-1]
+                elif all(p<0 for _,_,part,_,p in gps):
+                    gps = gps[::-1]
                 gps = sorted(gps,key = lambda x: app.pw_ratio[x[1]][('',focus)][x[4]],reverse = True)
+                
                 for pattern , head , part , _,_ in gps:
                     if head in  app.dictWord[part]:
                         examples = select_examples(pattern,head,part)
@@ -549,7 +591,11 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
                                     done = True
                                     break
                 if not done:
-                    output.append(find_idioms_from_gps(gps))
+                    idioms_result = find_idioms_from_gps(gps)
+                    if idioms_result:
+                        output.append(idioms_result)
+                    else:
+                        output.append("<p>The usage of %s: %s</p>"%(gps[0][1],gps[0][0]))
             else:
                 delword,part_ = my_lemma(correction,entails_sent)
                 if part_ in ['N','J','V']:

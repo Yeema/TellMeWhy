@@ -2,11 +2,10 @@ from app import *
 from nltk.tokenize import word_tokenize
 from preprocess import *
 import re
-from app import *
 import grammarpat
 import spacy
 
-nlp = spacy.load('en')
+nlp = spacy.load('en_core_web_md')
 
 ab = re.compile(r"\w*'\w*|\w*’\w*")
 loss_del = re.compile(r'\[ *- *([^\[\]]*?) *- *\]')
@@ -35,6 +34,7 @@ TIME = set(list(MONTH)+\
 
 def find_phrases(patterns,head,part):
     output_phrases = []
+    head = head.lower()
     for pattern in patterns:
         words = word_tokenize(pattern)
         words = ' '.join([w for w in words if w in grammarpat.allreserved or w==part]).replace(part,head)
@@ -78,6 +78,8 @@ def find_meaning(lista,listb,a,b):
 
 def explain_voc_semantic_error(correction,d_lemma,d_part,a_lemma,a_part):
     output = []
+    d_lemma = d_lemma.lower()
+    a_lemma = a_lemma.lower()
     output.append('It is a semantic error.')
     listd = app.dictDef[d_lemma][d_part.upper()]
     lista = app.dictDef[a_lemma][a_part.upper()]
@@ -224,14 +226,14 @@ def find_N_meaning(head,isUncount = False):
             elif Us and Cs:
                 output.append("The noun <b>%s</b> can be both countable and uncountable which depends on its definition. When it means %s, it expresses an abstract concept so it is uncountable for sure. However, when it explians %s, it represents a countable noun."%(head,' or '.join(Us),' or '.join(Cs)))
             elif emp:
-                output.append("The noun <b>%s</b> is uncountable because it descibes relatively abstract concept that <b>%s</b>."%(head,' or '.join(emp[:2])))
+                output.append("The noun <b>%s</b> is uncountable because it descibes relatively abstract concept that %s."%(head,' or '.join(emp[:2])))
         else:
             if Cs and not Us:
                 output.append("The noun <b>%s</b> is countable all the time. It means %s which describes relatively abstract concept."%(head,' or '.join(Cs[:2])))
             elif Us and Cs:
                 output.append("The noun <b>%s</b> can be both countable and uncountable which depends on its definition. When it means %s, it expresses an abstract concept so it is uncountable for sure. However, when it explians %s, it represents a countable noun."%(head,' or '.join(Us),' or '.join(Cs)))
             elif emp:
-                output.append("The noun <b>%s</b> is countable when it means <b>%s</b>."%(head,' or '.join(emp[:2])))
+                output.append("The noun <b>%s</b> is countable when it means %s."%(head,' or '.join(emp[:2])))
     return '<p>'+'</p><p>'.join(output)+'</p>'
 
 def check_uncountable(head):
@@ -260,6 +262,7 @@ def my_lemma(correction,entails_sent):
 def find_voc_meaning(head,part):
     output = []
     part = part.upper()
+    head = head.lower()
     mapp_ = {'V':'verb','N':'noun','ADJ':'adjective','C':'countable','U':'uncountable','PLURAL':'usually in plural format','I':'intransitive','T':'transitive'}
     head = head.lower()
     if app.dictDef[head] and app.dictDef[head][part]:
@@ -358,7 +361,7 @@ def find_idioms(entails_sent,target):
             if tags[idx][0] in ['V','N','J'] or lemmas[idx] in grammarpat.allreserved:
                 head = lemmas[idx]
                 phrase = head +' '+ phrase
-                if dictPhrase[phrase]:
+                if app.dictPhrase[phrase]:
                     done = True
                     break
     else:
@@ -381,16 +384,23 @@ def find_idioms(entails_sent,target):
 
 def find_idioms_from_gps(gps):
     output = []
+    done = False
     for  pattern , head , part , _,_ in gps[::-1]:
-        if app.phraseV[head]:
-            phrases = find_phrases([pattern],head,part)
-            if phrases:
-                for phrase in phrases:
-                    if phrase.split('%')[0] in dictPhrase:
-                        output.append('<b>%s</b> is a phrase which means <b>%s</b>.'%(phrase.split('%')[0],' '.join(list(dictPhrase[phrase.split('%')[0]].values())[0][0])))
-                    if  '  '.join(app.phraseV[head][phrase][0][2][:2]):
-                        output.append(str_example%("For example: %s"%('  '.join(app.phraseV[head][phrase][0][2][:2]))))
-    return '<p>'+'</p><p>'.join(output)+'</p>'
+        if not done:
+            if app.phraseV[head]:
+                phrases = find_phrases([pattern],head,part)
+                if phrases:
+                    for phrase in phrases:
+                        if phrase.split('%')[0] in app.dictPhrase:
+                            output.append('<b>%s</b> is a phrase which means <b>%s</b>.'%(phrase.split('%')[0],' '.join(list(app.dictPhrase[phrase.split('%')[0]].values())[0][0])))
+                        if  '  '.join(app.phraseV[head][phrase][0][2][:2]):
+                            output.append(str_example%("For example: %s"%('  '.join(app.phraseV[head][phrase][0][2][:2]))))
+                        if output:
+                            done = True
+    if output:
+        return '<p>'+'</p><p>'.join(output)+'</p>'
+    else:
+        return
 
 def compare_lemma(correction):
     dels = deletion.search(correction)
@@ -418,12 +428,16 @@ def compare_lemma(correction):
 
 def find_collocations(gps,tagging,a_lemma,d_lemma):
     output = []
+    a_lemma = a_lemma.lower()
+    d_lemma = d_lemma.lower()
     for gp in gps[::-1]:
         pattern = ' '.join([g for g in gp[0].replace('(v)','').split() if g.strip()])
         if len(pattern.split()) == 3 or pattern == 'V n':
             headword, pos, sent = gp[1:]
+            headword = headword.lower()
             idx,words,lemmas,tags = find_idx(tagging,sent.split()[-1])
             tail = lemmas[idx]
+      
             if headword == a_lemma:
                 if app.miniparCol[a_lemma][pattern][lemmas[idx]] and app.miniparCol[d_lemma][pattern][lemmas[idx]]:
                     if pattern == 'V n':
