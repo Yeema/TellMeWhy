@@ -87,19 +87,13 @@ $(document).ready(function(){
     $(document).on('click','.nav-link',function(){
         var mode = $('.nav-link.active').attr('id');
         if (mode == 'linggle-tab'){
-            var sentence = document.getElementById('write-aes').innerText;
-            console.log(sentence);
-            console.log(prev_sent);
-            if(sentence=="" || prev_sent == sentence){
-//                 const edits = document.querySelectorAll('span.edit');
-//                 console.log(edits)
-//                 edits.forEach(function(element) {
-//                     var edit_id = $(element).data('edit');
-//                     $(`span.${edit_id}`).toggleClass('active');
-//                 });
-                console.log(this);
+//             var sentence = document.getElementById('write-aes').innerText;
+//             console.log(sentence);
+//             console.log(prev_sent);
+//             if(sentence=="" || prev_sent == sentence){
+//                 console.log(this);
                 $(".textcrollbar").find("span.edit").addClass('active');
-            }
+//             }
         }
     });
 });

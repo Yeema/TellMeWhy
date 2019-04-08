@@ -47,7 +47,7 @@ def query_entry():
                               '</p>'}
     if re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',text):
         result = defaultdict(lambda: defaultdict())
-        explain(text,result,'explain')
+        explain(text,result,'Example')
         htmlize(result,res,'Example')
     else:
         if text.strip() in LCE:
@@ -78,13 +78,14 @@ def query_linggle():
     string = request.form['sent']
     edits = requests.get(GEC_API.format(string))
     edits = eval(edits.text)
-    correction = edits['word_diff_by_sent']
-    res = {}
+    correction = '\n'.join(edits['word_diff_by_sent'])
+    res = {'sent': correction.replace('\n','')}
     if correction:
-        correction = beautify(correction[0])
-        result = defaultdict(lambda: defaultdict())
-        explain(correction,result,'linggle')
-        htmlize(result,res,'linggle')
+        if re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction):
+            correction = beautify(correction)
+            result = defaultdict(lambda: defaultdict())
+            explain(correction,result,'linggle')
+            htmlize(result,res,'linggle')
     return jsonify(res)
 
 @app.route('/linggle', methods=['POST'])
@@ -94,7 +95,6 @@ def linggle():
 
 def htmlize(result,res,mode):
     myPanel = ''
-#     {'a':'<ul><li>'+'</li><li>'.join(['aaa','aaaa'])+'</li></ul>','b':'<ul><li>'+'</li><li>'.join(['bbb','bbbb']),'c':'<ul><li>'+'</li><li>'.join(['aaa','aaaa'])+'</li></ul>','d':'<ul><li>'+'</li><li>'.join(['bbb','bbbb']),'e':'<ul><li>'+'</li><li>'.join(['aaa','aaaa'])+'</li></ul>','f':'<ul><li>'+'</li><li>'.join(['bbb','bbbb'])}
     if mode != 'linggle':
         first = True
         for id,mod in result.items():
