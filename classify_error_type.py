@@ -20,16 +20,16 @@ def leave_error(correction,lists):
     input_split = []
     if head or tail:
         if head and tail:
-            head = head.lower()
-            tail = tail.lower()
+            head = head
+            tail = tail
             start = correction.find(head)
             idx = start + len(head)
         elif head:
-            head = head.lower()
+            head = head
             start = correction.find(head)
             idx = start + len(head)
         elif tail:
-            tail = tail.lower()
+            tail = tail
             start = correction.find(tail)
             idx = start + len(tail)
         if idx < len(correction):
@@ -90,28 +90,28 @@ def grep_error_GEC(string,b_lists,lists,errors,mod_list,result,mode):
     for before, matchobj in zip(b_lists, lists):
         idx = string.find(before, start)
         if matchobj[0]:
-            if mode == 'GEC':
-                after = '<span class="edit deletion edit{error_id}">{delete}</span> <span class="edit addition edit{error_id}">{insert}</span>'.format(
-                    error_id=error_id, delete=matchobj[0], insert=matchobj[1])
+            if mode == 'GEC' and error_id>0:
+                after = '<span class="edit deletion edit{error_id}" data-edit="{error_id}">{delete}</span> <span class="edit addition edit{error_id}" data-edit="{error_id}">{insert}</span>'.format(
+                error_id=error_id, delete=matchobj[0], insert=matchobj[1])
             else:
                 after = '<span class="edit deletion edit{error_id} active" data-edit="{error_id}" >{delete}</span> <span class="edit addition edit{error_id} active" data-edit="{error_id}">{insert}</span>'.format(
                     error_id=error_id, delete=matchobj[0], insert=matchobj[1])
-                prev,sub = find_linggle(sent,'[-%s-]{+%s+}'%(matchobj[0],matchobj[1]))
-                result[error_id]['linggle'] = ' '.join([word for word in [prev,matchobj[0]+'/'+matchobj[1],sub] if word.strip()])
+            prev,sub = find_linggle(sent,'[-%s-]{+%s+}'%(matchobj[0],matchobj[1]))
+            result[error_id]['linggle'] = ' '.join([word for word in [prev,matchobj[0]+'/'+matchobj[1],sub] if word.strip()])
         elif matchobj[2]:
-            if mode == 'GEC':
-                after = '<span class="edit deletion edit{error_id}">{delete}</span>'.format(error_id=error_id, delete=matchobj[2])
+            if mode == 'GEC' and error_id>0:
+                    after = '<span class="edit deletion edit{error_id}" data-edit="{error_id}">{delete}</span>'.format(error_id=error_id, delete=matchobj[2])
             else:
                 after = '<span class="edit deletion edit{error_id} active" data-edit="{error_id}">{delete}</span>'.format(error_id=error_id, delete=matchobj[2])
-                prev,sub = find_linggle(sent,'[-{delete}-]'.format(delete = matchobj[2]))
-                result[error_id]['linggle'] = (prev+' ?'+matchobj[2]+' '+sub).strip()
+            prev,sub = find_linggle(sent,'[-{delete}-]'.format(delete = matchobj[2]))
+            result[error_id]['linggle'] = (prev+' ?'+matchobj[2]+' '+sub).strip()
         else:
-            if mode == 'GEC':
-                after = '<span class="edit addition edit{error_id}">{insert}</span>'.format(error_id=error_id, insert=matchobj[3])
+            if mode == 'GEC' and error_id>0:
+                after = '<span class="edit addition edit{error_id}" data-edit="{error_id}">{insert}</span>'.format(error_id=error_id, insert=matchobj[3])
             else:
                 after = '<span class="edit addition edit{error_id} active" data-edit="{error_id}">{insert}</span>'.format(error_id=error_id, insert=matchobj[3])
-                prev,sub = find_linggle(sent,'{+%s+}'%(matchobj[3]))
-                result[error_id]['linggle'] = (prev+' ?'+matchobj[3]+' '+sub).strip()
+            prev,sub = find_linggle(sent,'{+%s+}'%(matchobj[3]))
+            result[error_id]['linggle'] = (prev+' ?'+matchobj[3]+' '+sub).strip()
         string = myreplace(string,idx,before, after)
         error_id += 1
         start = idx+1
@@ -183,6 +183,7 @@ def explain(corrections,result,mode):
             idx = [case1, case2,case3].index(idx)
 
             input_cor,input_split,threshold = leave_error(correction,replacelist[idx])
+            print(186,input_cor)
             # replace
             if idx == 0:
                 tmp = explain_replace(input_cor,entails_sent,input_split,threshold,done)

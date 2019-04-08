@@ -37,7 +37,14 @@ def index():
 def query_entry():
     text = request.form['text_field']
     text = beautify(text)
-    res = {}
+    res = {'sent':text,'html':'<p class="default-intro">'+
+                              '<p>Please submit your writings with edits! </p>'+
+                              '<p>Usage1: Submit <b>a</b> problem causing word.</p>'+
+                              '<p>Usage2: There are three types of edits. Enter them in the following formats.</p>'+
+                              '<b>Replacement:</b> He <b>[-borrowed-]{+lent+}</b> me some of his books.<br>'+
+                              '<b>Omission:</b> We discussed <b>[-about-]</b> the issue.<br>'+
+                              '<b>Insertion:</b> School finishes at five in <b>{+the+}</b> afternoon.'+
+                              '</p>'}
     if re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',text):
         result = defaultdict(lambda: defaultdict())
         explain(text,result,'explain')
@@ -45,8 +52,10 @@ def query_entry():
     else:
         if text.strip() in LCE:
             lookup_LCE(text.strip(),res)
-        
+    
     return jsonify(res)
+        
+    
 
 @app.route('/GEC',methods=['POST'])
 def query_GEC():
@@ -54,13 +63,14 @@ def query_GEC():
     edits = requests.get(GEC_API.format(string))
     edits = eval(edits.text)
     # correction = edits['word_diff']
-    correction = edits['word_diff_by_sent']
-    res = {}
+    correction = '\n'.join(edits['word_diff_by_sent'])
+    res = {'sent': correction.replace('\n',''),'html':'<p class="default-intro">'+'Your writings are perfect without any errors!<br>Please submit another essays, thanks!'+'</p>'}
     if correction:
-        correction = beautify(correction[0])
-        result = defaultdict(lambda: defaultdict())
-        explain(correction,result,'GEC')
-        htmlize(result,res,'GEC')
+        if re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction):
+            correction = beautify(correction)
+            result = defaultdict(lambda: defaultdict())
+            explain(correction,result,'GEC')
+            htmlize(result,res,'GEC')
     return jsonify(res)
 
 @app.route('/linggle_go',methods=['POST'])
@@ -89,13 +99,14 @@ def htmlize(result,res,mode):
         first = True
         for id,mod in result.items():
             # res['%d\tpos'%(id)] = '%d\t%d'%(mod['pos'][0],mod['pos'][1])
-            tmp = '<ul><li> %s </li></ul>'%('</li><li>'.join([r for r in mod['body'] if r.replace('<p></p>','').strip()]))
-            if first:
-                first = False
-                myPanel += '<div class="card shadow-sm rounded bg-white">'+'<div class="card-header" id="heading%d">'%(id)+'<h2 class="mb-0">'+'<button class="btn collapsed" type="button" data-toggle="collapse" data-target="#collapse%d" aria-expanded="false" aria-controls="collapse%d" data-edit="edit%d">'%(id,id,id)+'%s'%(mod['header'])+ '</button>'+'</h2>'+'</div>'+'<div id="collapse%d" class="collapse show" aria-labelledby="heading%d" data-parent="#accordion%s" data-edit="edit%d">'%(id,id,mode,id)+'<div class="card-body">'+'%s'%(tmp)+'</div>'+'</div>'+'</div>'
-            else:
-                myPanel += '<div class="card shadow-sm rounded bg-white">'+'<div class="card-header" id="heading%d">'%(id)+'<h2 class="mb-0">'+'<button class="btn collapsed" type="button" data-toggle="collapse" data-target="#collapse%d" aria-expanded="false" aria-controls="collapse%d" data-edit="edit%d">'%(id,id,id)+'%s'%(mod['header'])+ '</button>'+'</h2>'+'</div>'+'<div id="collapse%d" class="collapse" aria-labelledby="heading%d" data-parent="#accordion%s" data-edit="edit%d">'%(id,id,mode,id)+'<div class="card-body">'+'%s'%(tmp)+'</div>'+'</div>'+'</div>'
-            
+            if 'body' in mod:
+                tmp = '<ul><li> %s </li></ul>'%('</li><li>'.join([r for r in mod['body'] if r.replace('<p></p>','').strip()]))
+                res[str(id)] = mod['linggle']
+                if first:
+                    first = False
+                    myPanel += '<div class="card shadow-sm rounded bg-white">'+'<div class="card-header" id="heading%d">'%(id)+'<h2 class="mb-0">'+'<button class="btn collapsed" type="button" data-toggle="collapse" data-target="#collapse%d" aria-expanded="false" aria-controls="collapse%d" data-edit="edit%d">'%(id,id,id)+'%s'%(mod['header'])+ '</button>'+'</h2>'+'</div>'+'<div id="collapse%d" class="collapse show" aria-labelledby="heading%d" data-parent="#accordion%s" data-edit="edit%d">'%(id,id,mode,id)+'<div class="card-body">'+'%s'%(tmp)+'</div>'+'</div>'+'</div>'
+                else:
+                    myPanel += '<div class="card shadow-sm rounded bg-white">'+'<div class="card-header" id="heading%d">'%(id)+'<h2 class="mb-0">'+'<button class="btn collapsed" type="button" data-toggle="collapse" data-target="#collapse%d" aria-expanded="false" aria-controls="collapse%d" data-edit="edit%d">'%(id,id,id)+'%s'%(mod['header'])+ '</button>'+'</h2>'+'</div>'+'<div id="collapse%d" class="collapse" aria-labelledby="heading%d" data-parent="#accordion%s" data-edit="edit%d">'%(id,id,mode,id)+'<div class="card-body">'+'%s'%(tmp)+'</div>'+'</div>'+'</div>'
         res['html'] = myPanel.replace('<li></li>','')
     else:
         for id, mod in result.items():

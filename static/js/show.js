@@ -1,5 +1,5 @@
+var prev_sent = "";
 var global_response;
-var global_mode = 'gec-tab';
 $(document).ready(function(){
     console.log("js is loaded");
     
@@ -9,7 +9,6 @@ $(document).ready(function(){
         // var sentence = $("#write-aes").text();
         console.log(sentence);
 //         console.log(global_mode);
-
         var mode = $('.nav-link.active').attr('id');
         console.log(mode)
         if(mode == 'gec-tab'){
@@ -21,6 +20,7 @@ $(document).ready(function(){
                 success: function(response) {
                     renderGECResult(response);
                     global_response = response;
+                    prev_sent = document.getElementById('write-aes').innerText;
                     const buttons = document.querySelectorAll('button');
                     console.log(buttons)
                     buttons.forEach(function(element) {
@@ -38,11 +38,12 @@ $(document).ready(function(){
                 success: function(response) {
                     renderSearchResult(response);
                     global_response = response;
+                    prev_sent = document.getElementById('write-aes').innerText;
                     const buttons = document.querySelectorAll('button');
                     console.log(buttons)
                     buttons.forEach(function(element) {
                         console.log('click button, explain-tab ');
-                          element.addEventListener('click', show_edit, false);
+                        element.addEventListener('click', show_edit, false);
                     });
                 }
             })
@@ -53,12 +54,12 @@ $(document).ready(function(){
                 dataType: 'json',
                 url: '/linggle_go',
                 success: function(response) {
-                    global_response = response;
                     renderLinggleResult(response);
+                    prev_sent = document.getElementById('write-aes').innerText;
+                    global_response = response;
                 }
             })
         }
-
     });
     
     
@@ -73,6 +74,7 @@ $(document).ready(function(){
     $(document).on('click','.edit',function(){
         var mode = $('.nav-link.active').attr('id');
         if (mode == 'linggle-tab'){
+            console.log(this);
             index = $(this).data('edit');
             console.log(index);
             SearchResult.query(global_response[index]);
@@ -81,15 +83,32 @@ $(document).ready(function(){
             $('.linggle.search-result').show()
         }
     });
+    
+    $(document).on('click','.nav-link',function(){
+        var mode = $('.nav-link.active').attr('id');
+        if (mode == 'linggle-tab'){
+            var sentence = document.getElementById('write-aes').innerText;
+            console.log(sentence);
+            console.log(prev_sent);
+            if(sentence=="" || prev_sent == sentence){
+//                 const edits = document.querySelectorAll('span.edit');
+//                 console.log(edits)
+//                 edits.forEach(function(element) {
+//                     var edit_id = $(element).data('edit');
+//                     $(`span.${edit_id}`).toggleClass('active');
+//                 });
+                console.log(this);
+                $(".textcrollbar").find("span.edit").addClass('active');
+            }
+        }
+    });
 });
 
 function show_edit(event, response){
     var edit_id = $(this).data('edit');
     var mode = $('.nav-link.active').attr('id');
     console.log(edit_id);
-//     if(mode!='linggle-tab'){
-        $(`span.edit:not(.${edit_id})`).removeClass('active');
-        $(`span.${edit_id}`).toggleClass('active');
-//     }
+    $(`span.edit:not(.${edit_id})`).removeClass('active');
+    $(`span.${edit_id}`).toggleClass('active');
 }
 

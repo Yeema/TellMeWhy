@@ -12,7 +12,7 @@ function renderSearchResult(data){
 function renderGECResult(data){
     var search_result = document.getElementById('accordionGEC');
     // search_result.innerHTML = data;
-    console.log('in renderGECResult')
+    console.log(data['html'])
     var counter = 0;
 //     console.log(data['html'])
     search_result.innerHTML = data['html'];
