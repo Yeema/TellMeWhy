@@ -165,6 +165,15 @@ def ngram_to_pat(words, lemmas, tags, chunks, start, end):
         elif isverbpat(lemmas[head_pos][0],pat.replace('wh','n')):
             mode = 'V'
             return pat,head_pos,change_start
+        elif isverbpat(lemmas[head_pos][0],pat.replace('amount n','n').replace('adj n','n')):
+            mode = 'V'
+            return pat,head_pos,change_start
+        elif isverbpat(lemmas[head_pos][0],pat.replace('amount','n').replace('adj n','n')):
+            mode = 'V'
+            return pat.replace('amount','n').replace('adj n','n'),head_pos,change_start
+        elif isverbpat(lemmas[head_pos][0],pat.replace('and','').replace('adj n','n')):
+            mode = 'V'
+            return pat.replace('and','').replace('adj n','n'),head_pos,change_start
         elif isverbpat(lemmas[head_pos][0],pat.replace('and','').replace('adj n','n')):
             mode = 'V'
             return pat.replace('and','').replace('adj n','n'),head_pos,change_start

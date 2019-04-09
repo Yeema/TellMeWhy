@@ -308,15 +308,20 @@ def explain_pattern(ex,head,part,pattern):
             tmp.append('The usage of <b>%s</b>:\t<b>%s</b>'%(head,ex[0].split('%')[0]))
         tmp.append(str_example%('For example:\t%s'%('\t'.join(ex[2][:-1]))))
         output.append('<br>'.join(tmp))
-    if app.miniparCol[head][ex[0].split('%')[0]]:
-        _pos = {'ADJ':'adjective','V':'verb','N':'noun'}
-        if output:
-            output[-1] += "<li>Besides, it is often paired the %s <b>%s</b> with vocabularies such as <b>%s</b>.</li>"%(_pos[part],head,','.join([v[0] for v in app.miniparCol[head][ex[0].split('%')[0]].most_common(3)]))
-        else:
-            output.append("Besides, it is often paired the %s <b>%s</b> with vocabularies such as <b>%s</b>."%(_pos[part],head,','.join([v[0] for v in app.miniparCol[head][ex[0].split('%')[0]].most_common(3)])))
-        return output
+    # if app.miniparCol[head][ex[0].split('%')[0]]:
+    #     _pos = {'ADJ':'adjective','V':'verb','N':'noun'}
+    #     if output:
+    #         output[-1] += "<li>Besides, it is often paired the %s <b>%s</b> with vocabularies such as <b>%s</b>.</li>"%(_pos[part],head,', '.join([v[0] for v in app.miniparCol[head][ex[0].split('%')[0]].most_common(3)]))
+    #     else:
+    #         output.append("Besides, it is often paired the %s <b>%s</b> with vocabularies such as <b>%s</b>."%(_pos[part],head,', '.join([v[0] for v in app.miniparCol[head][ex[0].split('%')[0]].most_common(3)])))
+    #     return output
     return '<p>'+'</p><p>'.join(output)+'</p>'
 
+def collocation_witout_compare(head,part,ex):
+    if app.miniparCol[head][ex[0].split('%')[0]]:
+        _pos = {'ADJ':'adjective','V':'verb','N':'noun'}
+        return "<p>Besides, it is often paired the %s <b>%s</b> with vocabularies such as <b>%s</b>.</p>"%(_pos[part],head,', '.join([v[0] for v in app.miniparCol[head][ex[0].split('%')[0]].most_common(3)]))
+    
 def select_examples(pattern,head,part):
     res = [item for item in app.dictWord[part][head] if pattern == item[0].split('%')[0]]
     if res:

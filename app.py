@@ -131,7 +131,7 @@ def init_DB():
     tmp_phrase = eval(open('/home/nlplab/yeema/ErrorExplaination/phrase.txt', 'r').read())
     tmp_dictDef = eval(open('/home/nlplab/yeema/ErrorExplaination/cambridge.gps.semanticDict_word_v4.json').read())
     tmp_dictPhrase = eval(open('/home/nlplab/yeema/ErrorExplaination/cambridge.gps.semanticDict_phrase_v5.json').read())
-    tmp_miniparCol = eval(open('/home/nlplab/yeema/grammarpat/minipar.collocation.json').read())
+    tmp_miniparCol = eval(open('/home/nlplab/yeema/grammarpat/minipar.collocation.v2.json').read())
     tmp_pw = open('/home/nlplab/yeema/problemWords/problem.col.v2').readlines()
 
     for pos, values in tmp_dictWord.items():

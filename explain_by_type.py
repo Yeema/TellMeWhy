@@ -4,7 +4,6 @@ from grammarpat import find_patterns
 from app import *
 import grammarpat
 import search_explanations
-
 ab = re.compile(r"\w*'\w*|\w*’\w*")
 loss_del = re.compile(r'\[ *- *([^\[\]]*?) *- *\]')
 loss_add = re.compile(r'\{\ *\+ *([^\[\]]*?) *\+ *\}')
@@ -89,34 +88,35 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                         if examples:
                             for ex in examples:
                                 tmp = explain_pattern(ex,head,part,pattern)
-                                if type(tmp) == list:
-                                    output.extend(tmp)
-                                else:
+                                output.append(tmp)
+                                tmp = collocation_witout_compare(head,part,ex)
+                                if tmp:
                                     output.append(tmp)
                             done = True
                             break
                     else:
-                            ini = ['V','N','ADJ']
-                            ini.remove(part)
-                            for pos in ini:
-                                examples = select_examples(pattern.replace(part,pos),head,pos)
-                                if examples:
-                                    for ex in examples:
-                                        tmp = explain_pattern(ex,head,pos,pattern.replace(part,pos))
-                                        if type(tmp) == list:
-                                            output.extend(tmp)
+                        ini = ['V','N','ADJ']
+                        ini.remove(part)
+                        for pos in ini:
+                            examples = select_examples(pattern.replace(part,pos),head,pos)
+                            if examples:
+                                for ex in examples:
+                                    tmp = explain_pattern(ex,head,pos,pattern.replace(part,pos))
+                                    output.append(tmp)
+                                    last_pat = pattern.split()[-1]
+                                    if part == 'V':
+                                        if isTo and last_pat == 'inf':
+                                            output.append(explain_INF())
+                                        elif isTo and last_pat == '-ing':
+                                            output.append(explain_ING())
                                         else:
-                                            output.append(tmp)
-                                        last_pat = pattern.split()[-1]
-                                        if part == 'V':
-                                            if isTo and last_pat == 'inf':
-                                                output.append(explain_INF())
-                                            elif isTo and last_pat == '-ing':
-                                                output.append(explain_ING())
-                                            else:
-                                                output.append(explain_VI_error(head,correction,pattern.replace(part,pos),ex))
-                                    done = True
-                                    break
+                                            output.append(explain_VI_error(head,correction,pattern.replace(part,pos),ex))
+                                        tmp = collocation_witout_compare(head,pos,ex)
+                                    if tmp:
+                                        output.append(tmp)
+
+                                done = True
+                                break
                 if not done:
                     idioms_result = find_idioms_from_gps(gps)
                     if idioms_result:
@@ -142,15 +142,6 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                 if d_lemma == a_lemma:
                     target = [delandadd.search(correction).group(2)]
                     gps = find_patterns(geniatag(' '.join(entails_sent)),target)
-#                     if gps:
-#                         for pattern,head,part,ex in gps:
-#                             if ex.find(target[0]) > ex.find(head):
-#                                 if pattern.split()[-2] in grammarpat.allreserved:
-#                                     output.append('The tense error is caused by <b>%s</b>.'%(pattern.split()[-2]))
-#                                     break
-#                                 elif len(pattern.split()) and a_lemma != head:
-#                                     output.append('The tense error is caused by <b>%s</b>.'%(head))
-#                                     break
                     output.append('Verb Form Error!')
                 else:
                     output.append(explain_voc_semantic_error(correction,d_lemma,d_part,a_lemma,a_part))
@@ -323,11 +314,6 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
             elif check_P(nextwordN,nextwordN_lemma):
                 output.append('<b>%s</b> is usually used with singular countable nouns.'%(focus))
                 done = True
-#             elif entails_sent.index(nextwordN) - entails_sent.index(nextwordJ) < 2:
-#     #             adjective to be noun
-#                 output.append("Do not use %s before an adjective (e.g. ‘deaf’, ‘British’) unless the adjective is followed by a noun"%(focus))
-#                 output.append(dictDet[focus])
-#                 done = True
         elif focus in det_p:
             nextwordN,nextwordN_lemma = find_nextword(entails_sent,target[-1],'J')
             if nextwordN == 'certain':
@@ -363,24 +349,19 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
                                 if isTo and last_pat == '-ing':
                                     output.append(explain_ING())
                                     tmp = explain_pattern(ex,head,part,pattern)
-                                    if type(tmp) == list:
-                                        output.extend(tmp)
-                                    else:
-                                        output.append(tmp)
+                                    output.append(tmp)
+                                 
                                 elif focus in grammarpat.allreserved:
                                     output.append(explain_VT_error(head,correction,pattern,ex))
                                 else:
                                     tmp = explain_pattern(ex,head,part,pattern)
-                                    if type(tmp) == list:
-                                        output.extend(tmp)
-                                    else:
-                                        output.append(tmp)
+                                    output.append(tmp)
                             else:
                                 tmp = explain_pattern(ex,head,part,pattern)
-                                if type(tmp) == list:
-                                    output.extend(tmp)
-                                else:
-                                    output.append(tmp)
+                                output.append(tmp)
+                            tmp = collocation_witout_compare(head,part,ex)
+                            if tmp:
+                                output.append(tmp)
                         done = True
                         break
                 else:
@@ -391,13 +372,13 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
                         if examples:
                             for ex in examples:
                                 tmp = explain_pattern(ex,head,pos,pattern.replace(part,pos))
-                                if type(tmp) == list:
-                                    output.extend(tmp)
-                                else:
-                                    output.append(tmp)
+                                output.append(tmp)
                                 last_pat = pattern.split()[-1]
                                 if part == 'V' and last_pat != 'inf' and last_pat != '-ing':
                                     output.append(explain_VI_error(head,correction,pattern.replace(part,pos),ex))
+                                tmp = collocation_witout_compare(head,pos,ex)
+                                if tmp:
+                                    output.append(tmp)
                             done = True
                             break
                         if done:
@@ -509,16 +490,16 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
                             if examples:
                                 for ex in examples:
                                     tmp = explain_pattern(ex,head,part,pattern)
-                                    if type(tmp) == list:
-                                        output.extend(tmp)
-                                    else:
-                                        output.append(tmp)
+                                    output.append(tmp)
                                     last_pat = pattern.split()[-1]
                                     if part == 'V':
                                         if isTo and last_pat == 'inf':
                                             output.append(explain_INF())
                                         else:
                                             output.append(explain_VI_error(head,correction,pattern,ex))
+                                    tmp = collocation_witout_compare(head,part,ex)
+                                    if tmp:
+                                        output.append(tmp)
                                 done = True
                                 break
                         else:
@@ -529,13 +510,13 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
                                 if examples:
                                     for ex in examples:
                                         tmp = explain_pattern(ex,head,pos,pattern.replace(part,pos))
-                                        if type(tmp) == list:
-                                            output.extend(tmp)
-                                        else:
-                                            output.append(tmp)
+                                        output.append(tmp)
                                         last_pat = pattern.split()[-1]
                                         if part == 'V' and last_pat != 'inf' and last_pat != '-ing':
                                             output.append(explain_VI_error(head,correction,pattern.replace(part,pos),ex))
+                                        tmp = collocation_witout_compare(head,pos,ex)
+                                        if tmp:
+                                            output.append(tmp)
                                     done = True
                                     break
                     else:
@@ -567,9 +548,9 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
                         if examples:
                             for ex in examples:
                                 tmp = explain_pattern(ex,head,part,pattern)
-                                if type(tmp) == list:
-                                    output.extend(tmp)
-                                else:
+                                output.append(tmp)
+                                tmp = collocation_witout_compare(head,part,ex)
+                                if tmp:
                                     output.append(tmp)
                             done = True
                             break
@@ -581,13 +562,13 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
                                 if examples:
                                     for ex in examples:
                                         tmp = explain_pattern(ex,head,pos,pattern.replace(part,pos))
-                                        if type(tmp) == list:
-                                            output.extend(tmp)
-                                        else:
-                                            output.append(tmp)
+                                        output.append(tmp)
                                         last_pat = pattern.split()[-1]
                                         if part == 'V' and last_pat != 'inf' and last_pat != '-ing':
                                             output.append(explain_VI_error(head,correction,pattern.replace(part,pos),ex))
+                                        tmp = collocation_witout_compare(head,part,ex)
+                                        if tmp:
+                                            output.append(tmp)
                                     done = True
                                     break
                 if not done:
