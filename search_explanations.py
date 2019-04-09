@@ -4,8 +4,10 @@ from preprocess import *
 import re
 import grammarpat
 import spacy
+from linggle_api import Linggle
 
 nlp = spacy.load('en_core_web_md')
+ling = Linggle('www')
 
 ab = re.compile(r"\w*'\w*|\w*’\w*")
 loss_del = re.compile(r'\[ *- *([^\[\]]*?) *- *\]')
@@ -81,21 +83,27 @@ def explain_voc_semantic_error(correction,d_lemma,d_part,a_lemma,a_part):
     d_lemma = d_lemma.lower()
     a_lemma = a_lemma.lower()
     output.append('It is a semantic error.')
-    listd = app.dictDef[d_lemma][d_part.upper()]
-    lista = app.dictDef[a_lemma][a_part.upper()]
-    if not listd:
-        listd = app.dictDef[d_lemma]['']
-    if not lista:
-        lista = app.dictDef[a_lemma]['']
-    if listd and lista:
-        delmeaning,addmeaning = find_meaning(listd,lista,d_lemma,a_lemma)
-        tmp = []
-        if delmeaning:
-            tmp.append('<b>%s</b> :\t%s.'%(d_lemma,delmeaning))
-        if addmeaning:
-            tmp.append("<b>%s</b> :\t%s."%(a_lemma,addmeaning))
-        if tmp:
-            output.append("<p>%s</p>"%('</p><p>'.join(tmp)))
+    del_word,add_word = deletion.search(correction).group(1).lower(),addition.search(correction).group(1).lower()
+    if (del_word,add_word) in app.dictSimilar:
+        output.append(app.dictSimilar[(del_word,add_word)])
+    elif (d_lemma,a_lemma) in app.dictSimilar:
+        output.append(app.dictSimilar[(d_lemma,a_lemma)])
+    else:
+        listd = app.dictDef[d_lemma][d_part.upper()]
+        lista = app.dictDef[a_lemma][a_part.upper()]
+        if not listd:
+            listd = app.dictDef[d_lemma]['']
+        if not lista:
+            lista = app.dictDef[a_lemma]['']
+        if listd and lista:
+            delmeaning,addmeaning = find_meaning(listd,lista,d_lemma,a_lemma)
+            tmp = []
+            if delmeaning:
+                tmp.append('<b>%s</b> :\t%s.'%(d_lemma,delmeaning))
+            if addmeaning:
+                tmp.append("<b>%s</b> :\t%s."%(a_lemma,addmeaning))
+            if tmp:
+                output.append("<p>%s</p>"%('</p><p>'.join(tmp)))
 
     return '<p>'+'</p><p>'.join(output)+'</p>'
 
@@ -444,45 +452,46 @@ def find_collocations(gps,tagging,a_lemma,d_lemma):
             tail = lemmas[idx]
       
             if headword == a_lemma:
-                if app.miniparCol[a_lemma][pattern][lemmas[idx]] and app.miniparCol[d_lemma][pattern][lemmas[idx]]:
+                if app.miniparCol[a_lemma][pattern][lemmas[idx]] or app.miniparCol[d_lemma][pattern][lemmas[idx]]:
                     if pattern == 'V n':
                         col = ' '.join([a_lemma,tail])
                         wcol = ' '.join([d_lemma,tail])
+                        result = ling.search("{correct}/{wrong} {tail}".format(correct = a_lemma, wrong = d_lemma,tail = tail))
                     else:
                         prep = pattern.split()[1]
                         col = ' '.join([a_lemma,prep,tail])
                         wcol = ' '.join([d_lemma,prep,tail])
-                    percentage = app.miniparCol[a_lemma][pattern][tail] / (app.miniparCol[a_lemma][pattern][tail] + app.miniparCol[d_lemma][pattern][tail])
+                        result = ling.search("{correct}/{wrong} {prep} {tail}".format(correct = a_lemma, wrong = d_lemma,prep = prep,tail = tail))
+                    if len(result['ngrams'])>1:
+                        percentage = int(result['ngrams'][0][1])/sum([int(r[1]) for r in result['ngrams']])
+                    else:
+                        percentage = 1
                     output.append('<b>%s</b> is a more common collocation than <b>%s</b>.'%(col,wcol))
                     output.append('The probability of using <b>%s</b> is %s%s.'%(col,"{:3.2f}".format(percentage*100),'%'))
-                elif app.miniparCol[headword][pattern][a_lemma]:
-                    if pattern == 'V n':
-                        col = ' '.join([headword,a_lemma])
-                        wcol = ' '.join([headword,d_lemma])
-                    else:
-                        prep = pattern.split()[1]
-                        col = ' '.join([headword,prep,a_lemma])
-                        wcol = ' '.join([headword,prep,d_lemma])
-                        output.append('People always use <b>%s</b>. It is impossible to use <b>%s</b>'%(col,wcol))
             else:
-                if app.miniparCol[headword][pattern][a_lemma] and app.miniparCol[headword][pattern][d_lemma]:
+                if app.miniparCol[headword][pattern][a_lemma] or app.miniparCol[headword][pattern][d_lemma]:
                     if pattern == 'V n':
                         col = ' '.join([headword,a_lemma])
                         wcol = ' '.join([headword,d_lemma])
+                        result = ling.search("{correct}/{wrong} {tail}".format(correct = a_lemma, wrong = d_lemma,tail = tail))
                     else:
                         col = ' '.join([headword,pattern.split()[1],a_lemma])
                         wcol = ' '.join([headword,pattern.split()[1],d_lemma])
-                    percentage = app.miniparCol[headword][pattern][a_lemma] / (app.miniparCol[headword][pattern][a_lemma] + app.miniparCol[headword][pattern][d_lemma])
+                        result = ling.search("{correct}/{wrong} {prep} {tail}".format(correct = a_lemma, wrong = d_lemma,prep = prep,tail = tail))
+                    if len(result['ngrams'])>1:
+                        percentage = int(result['ngrams'][0][1])/sum([int(r[1]) for r in result['ngrams']])
+                    else:
+                        percentage = 1
                     output.append('<b>%s</b> is a more common collocation than <b>%s</b>.'%(col,wcol))
                     output.append('The probability of using <b>%s</b> is %s%s.'%(col,"{:3.2f}".format(percentage*100),'%'))
-                elif app.miniparCol[headword][pattern][a_lemma]:
-                    if pattern == 'V n':
-                        col = headword + a_lemma
-                    else:
-                        col = headword + ' ' +pattern.split()[1] + ' ' + a_lemma
-                        wcol = headword + ' ' +pattern.split()[1] + ' ' + d_lemma
-                        output.append('People always use <b>%s</b>. It is impossible to use <b>%s</b>'%(col,wcol))
-    return '<p>'+'</p><p>'.join(output)+'</p>'
+        if output:
+            return '<p>'+'</p><p>'.join(output)+'</p>'
+        
+    if output:
+        return '<p>'+'</p><p>'.join(output)+'</p>'
+    else:
+        return
+    
 def explain_INF():
     inf = "When verbs followed by a to-infinitive often indicate the intention of an action or a future event."
     ing = "Compare: Verbs followed by an <b>-ing</b> form often emphasize on a status, fact, or activity."

@@ -251,7 +251,9 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
 #             find collocation according to minipar
             tagging = geniatag(' '.join(entails_sent))
             gps = find_patterns(tagging,[a_word])
-            output.append(find_collocations(gps,tagging,a_lemma,d_lemma))
+            tmp = find_collocations(gps,tagging,a_lemma,d_lemma)
+            if tmp:
+                output.append(tmp)
     return output
 
 def explain_unnecessary(correction,entails_sent,correction_split,threshold,done = False):

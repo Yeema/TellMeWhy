@@ -29,6 +29,8 @@ miniparCol = defaultdict(lambda: defaultdict(lambda: Counter()))
 pw = defaultdict(lambda: defaultdict(lambda:Counter()))
 pw_ratio = defaultdict(lambda: defaultdict(lambda:Counter()))
 LCE = eval(open('/home/nlplab/yeema/ErrorExplaination/LCE.json').read())
+dictSimilar = defaultdict()
+
 @app.route('/')	
 def index():
     return render_template('template.html')
@@ -129,10 +131,11 @@ def lookup_LCE(word,res):
 def init_DB():
     tmp_dictWord = eval(open('/home/nlplab/yeema/ErrorExplaination/GPs.linggle.extend.txt', 'r').read())
     tmp_phrase = eval(open('/home/nlplab/yeema/ErrorExplaination/phrase.txt', 'r').read())
-    tmp_dictDef = eval(open('/home/nlplab/yeema/ErrorExplaination/cambridge.gps.semanticDict_word_v4.json').read())
+    tmp_dictDef = eval(open('/home/nlplab/yeema/ErrorExplaination/cambridge.gps.semanticDict_word_v5.json').read())
     tmp_dictPhrase = eval(open('/home/nlplab/yeema/ErrorExplaination/cambridge.gps.semanticDict_phrase_v5.json').read())
-    tmp_miniparCol = eval(open('/home/nlplab/yeema/grammarpat/minipar.collocation.v2.json').read())
+    tmp_miniparCol = eval(open('/home/nlplab/yeema/grammarpat/minipar.collocation.v3.json').read())
     tmp_pw = open('/home/nlplab/yeema/problemWords/problem.col.v2').readlines()
+    tmp_dictSimilar = eval(open('/home/nlplab/yeema/ErrorExplaination/evaluation/longman_similar_word_explanation.json').read())
 
     for pos, values in tmp_dictWord.items():
         for head,value in values.items():
@@ -170,6 +173,9 @@ def init_DB():
                     pw_ratio[head][edit][1] += c/s
                 elif key < 0:
                     pw_ratio[head][edit][-1] += c/s
+    
+    for key,val in tmp_dictSimilar.items():
+        dictSimilar[tuple(key.split('\t'))] = val
                 
 init_DB()
 app.run(debug=True)
