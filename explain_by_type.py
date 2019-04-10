@@ -220,7 +220,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
             elif d_lemma.lower() in det_p and a_lemma.lower() in det_s:
                 nextword,nextword_lemma = find_nextword(entails_sent,a_lemma,'N')
                 if check_S(nextword,nextword_lemma):
-                    output.append('<b>%s</b> is usually used with singular countable nouns.'%(a_lemma))
+                    output.append('<b>%s</b> is usually used in singular countable form.'%(a_lemma))
                     output.append(find_N_meaning(nextword))
                 else:
                     output.append("%s -> %s :  this case hasn't handled yet."%(d_lemma,a_lemma))
@@ -231,12 +231,12 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
             elif d_lemma.lower() in det_s and a_lemma.lower() in det_p:
                 nextword,nextword_lemma = find_nextword(entails_sent,a_lemma,'N')
                 if check_S(nextword,nextword_lemma):
-                    output.append('<b>%s</b> is usually used with singular countable nouns. Besides, <b>%s</b> is usually used with uncountable nouns and plural countables (NOT with singular countable nouns)'%(d_lemma,a_lemma))
+                    output.append('<b>%s</b> is usually used in singular countable form. Besides, <b>%s</b> is usually used in uncountable form or plural countables (NOT with singular countable form)'%(d_lemma,a_lemma))
                 else:
-                    output.append('<b>%s</b> is usually used with <b>uncountable nouns</b> such as %s.'%(a_lemma,nextword))
+                    output.append('<b>%s</b> is usually used in <b>uncountable form</b> such as %s.'%(a_lemma,nextword))
                     output.append(find_N_meaning(nextword,'U'))
             elif d_lemma.lower() in det_p and a_lemma.lower() in det_s:
-                output.append('<b>%s</b> is usually used with plural countable nouns. Besides, <b>%s</b> is usually used with singular countable nouns.'%(d_lemma,a_lemma))
+                output.append('<b>%s</b> is usually used in plural countable form. Besides, <b>%s</b> is usually used in singular countable form.'%(d_lemma,a_lemma))
             else:
                 output.append(dictDet[d_lemma.lower()])
                 output.append(dictDet[a_lemma.lower()])
@@ -311,10 +311,10 @@ def explain_unnecessary(correction,entails_sent,correction_split,threshold,done 
             nextwordJ,nextwordJ_lemma = find_nextword(entails_sent,target[-1],'J')
     #             uncountable
             if check_uncountable(nextwordN):
-                output.append('<b>%s</b> is uncountable so it must not be used with <b>%s</b> whcih is usually paired with singular countable nouns.'%(nextwordN,focus))
+                output.append('<b>%s</b> is uncountable so it must not be used with <b>%s</b>, whcih is usually paired with singular countable nouns.'%(nextwordN,focus))
                 done = True
             elif check_P(nextwordN,nextwordN_lemma):
-                output.append('<b>%s</b> is usually used with singular countable nouns.'%(focus))
+                output.append('<b>%s</b> is usually used in singular countable form.'%(focus))
                 done = True
         elif focus in det_p:
             nextwordN,nextwordN_lemma = find_nextword(entails_sent,target[-1],'J')
@@ -531,7 +531,7 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
                 phrase,head = find_idioms(entails_sent,target)
                 if phrase and head:
                     done = True
-                    output.append('<b>%s</b> is a phrase. Its definition is listed in the below. <ol><li>%s</li></ol>'%(phrase,'</li><li>'.join(['\t'.join(d).strip() for d in list(app.dictPhrase[phrase].values())[0][:2]])))
+                    output.append('<b>%s</b> is a phrase. Its definition is listed below. <ol><li>%s</li></ol>'%(phrase,'</li><li>'.join(['\t'.join(d).strip() for d in list(app.dictPhrase[phrase].values())[0][:2]])))
                     for p in app.phraseV[head].keys():
                         if phrase in p:
                             output.append(str_example%('For example: %s'%('  '.join([' '.join(app.phraseV[head][p][0][2][:2]) for p in app.phraseV[head].keys() if phrase in p ]))))
@@ -589,7 +589,7 @@ def explain_missing(correction,entails_sent,correction_split,threshold,done=Fals
                     phrase,head = find_idioms(entails_sent,target)
                     if phrase and head:
                         done = True
-                        output.append('<b>%s</b> is a phrase. Its definition is listed in the below. <ol><li>%s</li></ol>'%(phrase,'</li><li>'.join([' '.join(d) for d in list(app.dictPhrase[phrase].values())[0][:2]])))
+                        output.append('<b>%s</b> is a phrase. Its definition is listed below. <ol><li>%s</li></ol>'%(phrase,'</li><li>'.join([' '.join(d) for d in list(app.dictPhrase[phrase].values())[0][:2]])))
                         output.append(str_example%('For example: %s'%('  '.join([' '.join(app.phraseV[head][p][0][2][:2]) for p in app.phraseV[head].keys() if phrase in p ]))))
     return output
 
