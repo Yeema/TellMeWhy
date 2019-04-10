@@ -124,7 +124,7 @@ def explain_VT_error(head,correction,pattern,ex):
         if Ts and not Is and not emp:
             output.append("%s is a transitive verb and needs an object instead of a preposition (e.g. %s)."%(head[0].upper()+head[1:],deletion.search(correction).group(1)))
         elif Ts and Is:
-            output.append("<b>%s</b> can be both transitive and intransitive verb. When it means %s, it is a transitive verb. However, when it describes that %s, it represents a intransitive verb."%(head[0].upper()+head[1:],' or '.join(Ts[:2]),' or '.join(Is[:2])))
+            output.append("<b>%s</b> is both transitive and intransitive verb. When it means %s, it is a transitive verb. However, when it describes that %s, it represents a intransitive verb."%(head[0].upper()+head[1:],' or '.join(Ts[:2]),' or '.join(Is[:2])))
         elif Ts:
             output.append("<b>%s</b> is a transitive verb and needs an object instead of a preposition (e.g. %s) when it means %s."%(head[0].upper()+head[1:],deletion.search(correction).group(1),Ts[0]))
         elif emp:
@@ -158,7 +158,7 @@ def explain_VI_error(head,correction,pattern,ex):
                 Ts.append(merge_def(df))
 
         if Is and not Ts:
-            output.append("<b>%s</b> is absolutely an intransitive verb and it means %s."%(head[0].upper()+head[1:],' or '.join(Is[:2])))
+            output.append("<b>%s</b> is an intransitive verb and it means %s."%(head[0].upper()+head[1:],' or '.join(Is[:2])))
         elif Ts:
             output.append("<b>%s</b> is an intransitive verb here which means %s. However, it can be transitive sometimes depending on the scenerio."%(head[0].upper()+head[1:],' or '.join(Is[:2])))
         else:
@@ -230,16 +230,16 @@ def find_N_meaning(head,isUncount = False):
 #         print(Cs,Us,emp)
         if isUncount:
             if Us and not Cs:
-                output.append("The noun <b>%s</b> is uncountable all the time. It means %s which describes relatively abstract concept."%(head,' or '.join(Us[:2])))
+                output.append("The noun <b>%s</b> is uncountable. It means %s which describes relatively abstract concept."%(head,' or '.join(Us[:2])))
             elif Us and Cs:
-                output.append("The noun <b>%s</b> can be both countable and uncountable which depends on its definition. When it means %s, it expresses an abstract concept so it is uncountable for sure. However, when it explians %s, it represents a countable noun."%(head,' or '.join(Us),' or '.join(Cs)))
+                output.append("The noun <b>%s</b> can be both countable and uncountable depending on its usage. When it means %s, it expresses an abstract concept so it is uncountable. However, when it explians %s, it is a countable noun."%(head,' or '.join(Us),' or '.join(Cs)))
             elif emp:
                 output.append("The noun <b>%s</b> is uncountable because it descibes relatively abstract concept that %s."%(head,' or '.join(emp[:2])))
         else:
             if Cs and not Us:
-                output.append("The noun <b>%s</b> is countable all the time. It means %s which describes relatively abstract concept."%(head,' or '.join(Cs[:2])))
+                output.append("The noun <b>%s</b> is countable. It means %s which describes relatively abstract concept."%(head,' or '.join(Cs[:2])))
             elif Us and Cs:
-                output.append("The noun <b>%s</b> can be both countable and uncountable which depends on its definition. When it means %s, it expresses an abstract concept so it is uncountable for sure. However, when it explians %s, it represents a countable noun."%(head,' or '.join(Us),' or '.join(Cs)))
+                output.append("The noun <b>%s</b> can be both countable and uncountable depending on its usage. When it means %s, it expresses an abstract concept so it is uncountable. However, when it explians %s, it is a countable noun."%(head,' or '.join(Us),' or '.join(Cs)))
             elif emp:
                 output.append("The noun <b>%s</b> is countable when it means %s."%(head,' or '.join(emp[:2])))
     return '<p>'+'</p><p>'.join(output)+'</p>'
@@ -328,7 +328,7 @@ def explain_pattern(ex,head,part,pattern):
 def collocation_witout_compare(head,part,ex):
     if app.miniparCol[head][ex[0].split('%')[0]]:
         _pos = {'ADJ':'adjective','V':'verb','N':'noun'}
-        return "<p>Besides, it is often paired the %s <b>%s</b> with vocabularies such as <b>%s</b>.</p>"%(_pos[part],head,', '.join([v[0] for v in app.miniparCol[head][ex[0].split('%')[0]].most_common(3)]))
+        return "<p>Besides, it is often paired %s <b>%s</b> with vocabularies such as <b>%s</b>.</p>"%(_pos[part],head,', '.join([v[0] for v in app.miniparCol[head][ex[0].split('%')[0]].most_common(3)]))
     
 def select_examples(pattern,head,part):
     res = [item for item in app.dictWord[part][head] if pattern == item[0].split('%')[0]]
