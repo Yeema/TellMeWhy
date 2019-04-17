@@ -7,8 +7,8 @@ from nltk.tokenize import word_tokenize
 
 ab = re.compile(r"\w*'\w*|\w*’\w*")
 loss_del = re.compile(r'\[ *- *([^\[\]]*?) *- *\]')
-loss_add = re.compile(r'\{\ *\+ *([^\[\]]*?) *\+ *\}')
-delandadd = re.compile(r'\[- *([^\[\]]*?) *-\] *\{\+ *([^\[\]]*?) *\+\}')
+loss_add = re.compile(r'\{\ *\+ *([^\{\}]*?) *\+ *\}')
+delandadd = re.compile(r'\[- *([^\[\]]*?) *-\] *\{\+ *([^\{\}]*?) *\+\}')
 deletion = re.compile(r'\[- *([^\[\]]*?) *-\]')
 addition = re.compile(r'\{\+ *([^\[\]]*?) *\+\}')
 braces = re.compile(r'\[ *(.*?) *\]')
@@ -75,7 +75,7 @@ def find_linggle(sent,key):
     return prev,sub
 
 def only_alpha(word):
-        return ' '.join([w for w in word_tokenize(word) if w.isalpha()]).strip()
+    return ' '.join([w for w in word_tokenize(word) if w.isalpha()]).strip()
 
 def grep_error(string,b_lists,lists,errors,mod_list,result,mode):
     error_id = len(errors)
@@ -94,7 +94,7 @@ def grep_error(string,b_lists,lists,errors,mod_list,result,mode):
             prev = only_alpha(prev)
             sub = only_alpha(sub)
             result[error_id]['linggle'] = ' '.join([word for word in [prev,matchobj[0]+'/'+matchobj[1],sub] if word.strip()])
-        elif matchobj[2]:
+        elif matchobj[2]:         
             if mode != 'linggle' and error_id>0:
                     after = '<span class="edit deletion edit{error_id} {mode}" data-edit="{error_id}">{delete}</span>'.format(error_id=error_id, delete=matchobj[2],mode = mode)
             else:
@@ -126,12 +126,17 @@ def explain(corrections,result,mode):
     error_list = []
     final_list = []
     for correction in sent_tokenize(corrections):
-        correction = beautify(correction)
+        print(correction)
+        correction = beautify(correction,mode)
+        if not correction and mode == 'Example':
+            result['except']['body'] = "We do not explain multiple words edit in a correction symbol!"
+            return 
         final_list.append(correction)
         entails_sent = rephrase(correction)
         grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\{\}]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\{\}]* *\+\}',correction),re.findall(r'\[- *([^\[\]]*?) *-\] *\{\+ *([^\[\]]*?) *\+\}|\[- *([^\[\]]*?) *-\]|\{\+ *([^\[\]]*?) *\+\}',correction),error_list,mod_list,result,mode)
-
+        print('edits1:\t',deletion.search(correction) or addition.search(correction),correction)
         while deletion.search(correction) or addition.search(correction):
+            print('edits2:\t',deletion.search(correction) or addition.search(correction),correction)
             if prevs:
                 if prevs[0] in grammarpat.allreserved or prevs[1] in grammarpat.allreserved:
                     if deletion.search(correction) and addition.search(correction):
@@ -152,7 +157,6 @@ def explain(corrections,result,mode):
                 tmp = multi_delandadd.search(correction).group(0).strip()
                 # before = ''.join(tmp.split())
                 before = ' '.join(re.findall(addition, tmp))
-#                 transform = ' '.join(re.findall(deletion, tmp)) + '\t->\t' + before
                 transform = 'Replace ' + ' '.join(re.findall(deletion, tmp)) + ' with ' + before
                 after = before
                 case1 = correction.find(tmp)
@@ -162,7 +166,6 @@ def explain(corrections,result,mode):
                 tmp = deletion.search(correction).group(0)
                 after = ''
                 case2 = correction.find(tmp)
-#                 transform = deletion.search(correction).group(1) + '\t->\t' + 'NONE'
                 transform = 'Omit ' + deletion.search(correction).group(1)
                 replacelist[1] = [tmp,after,transform]
                 prevs = ( deletion.search(correction).group(1)  ,'')
@@ -170,7 +173,6 @@ def explain(corrections,result,mode):
                 tmp = addition.search(correction).group(0)
                 after = addition.search(correction).group(1)
                 case3 = correction.find(tmp)
-#                 transform = 'NONE' + '\t->\t' + addition.search(correction).group(1)
                 transform = 'Insert ' + addition.search(correction).group(1)
                 replacelist[2] = [tmp,after,transform]
                 prev = ('',addition.search(correction).group(1))
@@ -189,30 +191,56 @@ def explain(corrections,result,mode):
                 tmp = explain_missing(input_cor,entails_sent,input_split,threshold,done)
             result[error_count]['header'] = replacelist[idx][2]
             result[error_count]['body'] = tmp
-            print(tmp)
             # result[error_count]['pos'] = (error_list[error_count][1],error_list[error_count][2])
             error_count += 1
-            correction = ' '.join(correction.replace(replacelist[idx][0],replacelist[idx][1]).split())
+            correction = ' '.join(correction.replace(replacelist[idx][0],replacelist[idx][1],1).split())
     # result[0]['beautify'] = ' '.join(final_list)
     result[0]['sent'] = ' '.join(mod_list)
+    print('197\tdone')
 
-def beautify(s):
+def beautify(s,mode):
+#     lemmarize abbr.
     for a in re.findall(ab,s):
         if a.lower() in abbrs:
             s = s.replace(a,abbrs[a.lower()])
-    tokens = [ss for ss in s.split() if ss.strip()]
+    tokens = [ss for ss in word_tokenize(s) if ss.strip()]
     s = ' '.join(tokens)
     s_tmp = s
     while loss_add.search(s_tmp) or loss_del.search(s_tmp):
         if loss_del.search(s_tmp):
             head = loss_del.search(s_tmp).group(0)
             tail = loss_del.search(s_tmp).group(1)
-            s = s.replace(head,'[-'+tail+'-]')
-            s_tmp = s_tmp.replace(head,tail)
+            if len(tail.split())>1:
+                if mode != 'Example':
+                    s = s.replace(head,tail) 
+                else:
+                    return
+            else:
+                s = s.replace(head,'[-'+tail+'-]')
+                s_tmp = s_tmp.replace(head,tail)
         if loss_add.search(s_tmp):
             head = loss_add.search(s_tmp).group(0)
             tail = loss_add.search(s_tmp).group(1)
-            s = s.replace(head,'{+'+tail+'+}')
-            s_tmp = s_tmp.replace(head,tail)
+            if len(tail.split())>1:
+                if mode != 'Example':
+                    s = s.replace(head,'') 
+                else:
+                    return
+            else:
+                s = s.replace(head,'{+'+tail+'+}')
+                s_tmp = s_tmp.replace(head,tail)
+        
+        if delandadd.search(s):
+            d_head = loss_del.search(s).group(0)
+            d_tail = loss_del.search(s).group(1)
+            a_head = loss_add.search(s).group(0)
+            a_tail = loss_add.search(s).group(1)
+            if len(d_tail.split())>1 or len(a_tail.split())>1:
+                if mode!='Example':
+                    s = s.replace(delandadd.search(s).group(0),d_tail) 
+                else:
+                    return
+            else:
+                s = s.replace(delandadd.search(s).group(0),'[-%s-]{+%s+}'%(d_tail,a_tail))
     return ' '.join([ss.strip() for ss in s.split()])
 

@@ -18,7 +18,7 @@ GEC_API = 'https://whisky.nlplab.cc/translate/?text={}'
 
 
 app = Flask(__name__)
-tagger = GeniaTagger('/home/nlplab/yeema/geniataggerPython/geniatagger-3.0.2/geniatagger')
+tagger = GeniaTagger('/home/nlplab/yeema/geniataggerPython/geniatagger-3.0.2/geniatagger',['-nt'])
 ling = Linggle()
 
 dictWord = defaultdict(lambda: defaultdict(list))
@@ -38,7 +38,7 @@ def index():
 @app.route('/query', methods=['POST'])
 def query_entry():
     text = request.form['text_field']
-    text = beautify(text)
+#     text = beautify(text)
     res = {'sent':text,'html':'<p class="default-intro">'+
                               '<p>Please submit your writings with edits! </p>'+
                               '<p>Usage1: Submit <b>a</b> problem causing word.</p>'+
@@ -50,11 +50,22 @@ def query_entry():
     if re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',text):
         result = defaultdict(lambda: defaultdict())
         explain(text,result,'Example')
-        htmlize(result,res,'Example')
+        if 'except' in result:
+            res = {'sent':text,'html':'<p class="default-intro">'+'<p>{error_msg}</p>'.format(error_msg = result['except']['body'])+'</p>'}
+        else:
+            htmlize(result,res,'Example')
     else:
         if text.strip() in LCE:
             lookup_LCE(text.strip(),res)
-    
+        else:
+            res = {'sent':text,'html':'<p class="default-intro">'+
+                              '<p>Please submit your writings with edits! </p>'+
+                              '<p>Usage1: Submit <b>a</b> problem causing word.</p>'+
+                              '<p>Usage2: There are three types of edits. Enter them in the following formats.</p>'+
+                              '<b>Replacement:</b> He <b>[-borrowed-]{+lent+}</b> me some of his books.<br>'+
+                              '<b>Omission:</b> We discussed <b>[-about-]</b> the issue.<br>'+
+                              '<b>Insertion:</b> School finishes at five in <b>{+the+}</b> afternoon.'+
+                              '</p>'}
     return jsonify(res)
         
     
@@ -69,7 +80,6 @@ def query_GEC():
     res = {'sent': correction.replace('\n',''),'html':'<p class="default-intro">'+'Your writings are perfect without any errors!<br>Please submit another essays, thanks!'+'</p>'}
     if correction:
         if re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction):
-            correction = beautify(correction)
             result = defaultdict(lambda: defaultdict())
             explain(correction,result,'GEC')
             htmlize(result,res,'GEC')
@@ -84,7 +94,6 @@ def query_linggle():
     res = {'sent': correction.replace('\n','')}
     if correction:
         if re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction):
-            correction = beautify(correction)
             result = defaultdict(lambda: defaultdict())
             explain(correction,result,'linggle')
             htmlize(result,res,'linggle')
@@ -101,6 +110,7 @@ def htmlize(result,res,mode):
         first = True
         for id,mod in result.items():
             # res['%d\tpos'%(id)] = '%d\t%d'%(mod['pos'][0],mod['pos'][1])
+            print('app113:\t',id,mod)
             if 'body' in mod:
                 tmp = '<ul><li> %s </li></ul>'%('</li><li>'.join([r for r in mod['body'] if r.replace('<p></p>','').strip()]))
                 res[str(id)] = mod['linggle']
