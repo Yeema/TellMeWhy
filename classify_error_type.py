@@ -203,7 +203,59 @@ def beautify(s,mode):
     for a in re.findall(ab,s):
         if a.lower() in abbrs:
             s = s.replace(a,abbrs[a.lower()])
-    tokens = [ss for ss in word_tokenize(s) if ss.strip()]
+    #tokens = [ss for ss in word_tokenize(s) if ss.strip()]
+    old_tokens = [ss for ss in s.split() if ss.strip()]
+    tokens = []
+    for old in old_tokens:
+        if '[' in old or '{' in old:
+            if '[' in old and '{' in old:
+                tmp = multi_delandadd.search(old).group(0).strip()
+                if old.replace(tmp,'').strip():
+                    edit_idx = old.find(tmp)
+                    symbol_idx = old.find(old.replace(tmp,'').strip())
+                    old = old.replace(tmp,'').strip()
+                    if edit_idx > symbol_idx:
+                        tokens.append(old)
+                        tokens.append(tmp)
+                    else:
+                        old = old.replace(tmp,'').strip()
+                        tokens.append(tmp)
+                        tokens.append(old)
+                else:
+                    tokens.append(old)
+            elif '[' in old:
+                tmp = deletion.search(old).group(0).strip()
+                if old.replace(tmp,'').strip():
+                    edit_idx = old.find(tmp)
+                    symbol_idx = old.find(old.replace(tmp,'').strip())
+                    old = old.replace(tmp,'').strip()
+                    if edit_idx > symbol_idx:
+                        tokens.append(old)
+                        tokens.append(tmp)
+                    else:
+                        old = old.replace(tmp,'').strip()
+                        tokens.append(tmp)
+                        tokens.append(old)
+                else:
+                    tokens.append(old)
+            else:
+                tmp = addition.search(old).group(0).strip()
+                if old.replace(tmp,'').strip():
+                    edit_idx = old.find(tmp)
+                    symbol_idx = old.find(old.replace(tmp,'').strip())
+                    old = old.replace(tmp,'').strip()
+                    if edit_idx > symbol_idx:
+                        tokens.append(old)
+                        tokens.append(tmp)
+                    else:
+                        old = old.replace(tmp,'').strip()
+                        tokens.append(tmp)
+                        tokens.append(old)
+                else:
+                    tokens.append(old)
+        else:
+            tokens.append(old)
+            
     s = ' '.join(tokens)
     s_tmp = s
     while loss_add.search(s_tmp) or loss_del.search(s_tmp):
