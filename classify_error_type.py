@@ -134,9 +134,7 @@ def explain(corrections,result,mode):
         final_list.append(correction)
         entails_sent = rephrase(correction)
         grep_error(correction,re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\{\}]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\{\}]* *\+\}',correction),re.findall(r'\[- *([^\[\]]*?) *-\] *\{\+ *([^\[\]]*?) *\+\}|\[- *([^\[\]]*?) *-\]|\{\+ *([^\[\]]*?) *\+\}',correction),error_list,mod_list,result,mode)
-        print('edits1:\t',deletion.search(correction) or addition.search(correction),correction)
         while deletion.search(correction) or addition.search(correction):
-            print('edits2:\t',deletion.search(correction) or addition.search(correction),correction)
             if prevs:
                 if prevs[0] in grammarpat.allreserved or prevs[1] in grammarpat.allreserved:
                     if deletion.search(correction) and addition.search(correction):
@@ -196,14 +194,26 @@ def explain(corrections,result,mode):
             correction = ' '.join(correction.replace(replacelist[idx][0],replacelist[idx][1],1).split())
     # result[0]['beautify'] = ' '.join(final_list)
     result[0]['sent'] = ' '.join(mod_list)
-    print('197\tdone')
 
 def beautify(s,mode):
 #     lemmarize abbr.
     for a in re.findall(ab,s):
         if a.lower() in abbrs:
             s = s.replace(a,abbrs[a.lower()])
-    #tokens = [ss for ss in word_tokenize(s) if ss.strip()]
+#     eliminate multiple edits
+    edit_brace = re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\{\}]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\{\}]* *\+\}',s)
+    edit_no_brace = re.findall(r'\[- *([^\[\]]*?) *-\] *\{\+ *([^\[\]]*?) *\+\}|\[- *([^\[\]]*?) *-\]|\{\+ *([^\[\]]*?) *\+\}',s)
+    for before, matchobj in zip(edit_brace, edit_no_brace):
+        if matchobj[0]:
+            if len(matchobj[0].split())>1 or len(matchobj[1].split())>1:
+                s = s.replace(before,matchobj[0])
+        elif matchobj[2]:
+            if len(matchobj[2].split())>1:
+                s = s.replace(before,matchobj[2])
+        else:
+            if len(matchobj[3].split())>1:
+                s = s.replace(before,"")     
+        
     old_tokens = [ss for ss in s.split() if ss.strip()]
     tokens = []
     for old in old_tokens:
@@ -258,41 +268,41 @@ def beautify(s,mode):
             
     s = ' '.join(tokens)
     s_tmp = s
-    while loss_add.search(s_tmp) or loss_del.search(s_tmp):
-        if loss_del.search(s_tmp):
-            head = loss_del.search(s_tmp).group(0)
-            tail = loss_del.search(s_tmp).group(1)
-            if len(tail.split())>1:
-                if mode != 'Example':
-                    s = s.replace(head,tail) 
-                else:
-                    return
-            else:
-                s = s.replace(head,'[-'+tail+'-]')
-                s_tmp = s_tmp.replace(head,tail)
-        if loss_add.search(s_tmp):
-            head = loss_add.search(s_tmp).group(0)
-            tail = loss_add.search(s_tmp).group(1)
-            if len(tail.split())>1:
-                if mode != 'Example':
-                    s = s.replace(head,'') 
-                else:
-                    return
-            else:
-                s = s.replace(head,'{+'+tail+'+}')
-                s_tmp = s_tmp.replace(head,tail)
+#     while loss_add.search(s_tmp) or loss_del.search(s_tmp):
+#         if loss_del.search(s_tmp):
+#             head = loss_del.search(s_tmp).group(0)
+#             tail = loss_del.search(s_tmp).group(1)
+#             if len(tail.split())>1:
+#                 if mode != 'Example':
+#                     s = s.replace(head,tail) 
+#                 else:
+#                     return
+#             else:
+#                 s = s.replace(head,'[-'+tail+'-]')
+#                 s_tmp = s_tmp.replace(head,tail)
+#         if loss_add.search(s_tmp):
+#             head = loss_add.search(s_tmp).group(0)
+#             tail = loss_add.search(s_tmp).group(1)
+#             if len(tail.split())>1:
+#                 if mode != 'Example':
+#                     s = s.replace(head,'') 
+#                 else:
+#                     return
+#             else:
+#                 s = s.replace(head,'{+'+tail+'+}')
+#                 s_tmp = s_tmp.replace(head,tail)
         
-        if delandadd.search(s):
-            d_head = loss_del.search(s).group(0)
-            d_tail = loss_del.search(s).group(1)
-            a_head = loss_add.search(s).group(0)
-            a_tail = loss_add.search(s).group(1)
-            if len(d_tail.split())>1 or len(a_tail.split())>1:
-                if mode!='Example':
-                    s = s.replace(delandadd.search(s).group(0),d_tail) 
-                else:
-                    return
-            else:
-                s = s.replace(delandadd.search(s).group(0),'[-%s-]{+%s+}'%(d_tail,a_tail))
+#         if delandadd.search(s):
+#             d_head = loss_del.search(s).group(0)
+#             d_tail = loss_del.search(s).group(1)
+#             a_head = loss_add.search(s).group(0)
+#             a_tail = loss_add.search(s).group(1)
+#             if len(d_tail.split())>1 or len(a_tail.split())>1:
+#                 if mode!='Example':
+#                     s = s.replace(delandadd.search(s).group(0),d_tail) 
+#                 else:
+#                     return
+#             else:
+#                 s = s.replace(delandadd.search(s).group(0),'[-%s-]{+%s+}'%(d_tail,a_tail))
     return ' '.join([ss.strip() for ss in s.split()])
 

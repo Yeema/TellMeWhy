@@ -77,9 +77,9 @@ def query_GEC():
     edits = eval(edits.text)
     # correction = edits['word_diff']
     correction = '\n'.join(edits['word_diff_by_sent'])
-    res = {'sent': correction.replace('\n',''),'html':'<p class="default-intro">'+'Your writings are perfect without any errors!<br>Please submit another essays, thanks!'+'</p>'}
+    res = {'sent': string,'html':'<p class="default-intro">'+'Your writings are perfect without any errors!<br>Please submit another essays, thanks!'+'</p>'}
     if correction:
-        if re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction):
+        if any(len(target.split())<2 for target in re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction)):
             result = defaultdict(lambda: defaultdict())
             explain(correction,result,'GEC')
             htmlize(result,res,'GEC')
@@ -93,7 +93,7 @@ def query_linggle():
     correction = '\n'.join(edits['word_diff_by_sent'])
     res = {'sent': correction.replace('\n','')}
     if correction:
-        if re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction):
+        if any(len(target.split())<2 for target in re.findall(r'\[- *[^\[\]]* *-\] *\{\+ *[^\[\]]* *\+\}|\[- *[^\[\]]* *-\]|\{\+ *[^\[\]]* *\+\}',correction)):
             result = defaultdict(lambda: defaultdict())
             explain(correction,result,'linggle')
             htmlize(result,res,'linggle')
