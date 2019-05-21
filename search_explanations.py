@@ -82,7 +82,7 @@ def explain_voc_semantic_error(correction,d_lemma,d_part,a_lemma,a_part):
     output = []
     d_lemma = d_lemma.lower()
     a_lemma = a_lemma.lower()
-    output.append('It is a semantic error.')
+    output.append('It is a word-choice error.')
     del_word,add_word = deletion.search(correction).group(1).lower(),addition.search(correction).group(1).lower()
     if (del_word,add_word) in app.dictSimilar:
         output.append(app.dictSimilar[(del_word,add_word)])

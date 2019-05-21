@@ -70,7 +70,9 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
                 gps = [(pattern,head,part,ex,1) if correction.find(ex) < threshold else (pattern,head,part,ex,-1) for pattern,head,part,ex in gps]
                 isTo = wedit=='to' or target[0]=='to'
                 if not any(p>0 and isTo for _,_,part,_,p in gps):
-                    if all( pattern.replace(target[0],wedit) in [key[0].split('%')[0].strip() for key in app.dictWord[part][head]] for pattern,head,part,_,p in gps):
+                    if any( len(pattern.replace('N','').strip().split())==1 for pattern,head,part,_,p in gps):
+                        gps = [gp for gp in gps[::-1] if len(gp[0].replace('N','').strip().split())==1]
+                    elif all( pattern.replace(target[0],wedit) in [key[0].split('%')[0].strip() for key in app.dictWord[part][head]] for pattern,head,part,_,p in gps):
                         gps = gps[::-1]
                         gps = sorted(gps,key = lambda x: app.pw_ratio[x[1]][(delandadd.search(correction).group(1),target[0])][x[4]],reverse = True)
                     elif any( pattern.replace(target[0],wedit) in [key[0].split('%')[0].strip() for key in app.dictWord[part][head]] for pattern,head,part,_,p in gps):
@@ -137,6 +139,7 @@ def explain_replace(correction,entails_sent,correction_split,threshold,done = Fa
         d_lemma = d_lemma.lower()
         a_lemma = a_lemma.lower()
         parts = [d_part,a_part]
+#         print('explain_replace: ',d_lemma,a_lemma,parts)
         if d_lemma == a_lemma:
             if 'V' in parts:
                 if d_lemma == a_lemma:
